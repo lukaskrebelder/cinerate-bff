@@ -24,4 +24,31 @@ router.post("/auth", async (req, res) => {
   }
 });
 
+// DELETE /bff/auth leitet den Logout an DELETE /api/auth weiter.
+router.delete("/auth", async (req, res) => {
+  try {
+    const headers = {};
+
+    // Authorization-Header an das Backend weitergeben.
+    const authorization = req.get("Authorization");
+
+    if (authorization) {
+      headers.Authorization = authorization;
+    }
+
+    const backendResponse = await fetch(`${BACKEND_URL}/api/auth`, {
+      method: "DELETE",
+      headers: headers,
+    });
+
+    const responseData = await backendResponse.json();
+
+    return res.status(backendResponse.status).json(responseData);
+  } catch (error) {
+    return res.status(503).json({
+      message: "Backend is not reachable.",
+    });
+  }
+});
+
 module.exports = router;
