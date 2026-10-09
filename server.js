@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const statusRoute = require("./routes/status");
 const usersRoute = require("./routes/users");
+const authRoute = require("./routes/auth");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.use("/bff", statusRoute);
 app.use("/bff", usersRoute);
+app.use("/bff", authRoute);
 
 app.listen(PORT, () => {
   console.log(`CineRate-BFF läuft auf http://localhost:${PORT}`);
