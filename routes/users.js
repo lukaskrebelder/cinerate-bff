@@ -33,4 +33,34 @@ router.post("/users", async (req, res) => {
   }
 });
 
+// DELETE /bff/users/:userId leitet das Löschen an das Backend weiter.
+router.delete("/users/:userId", async (req, res) => {
+  try {
+    const headers = {};
+
+    // Authorization-Header an das Backend weitergeben.
+    const authorization = req.get("Authorization");
+
+    if (authorization) {
+      headers.Authorization = authorization;
+    }
+
+    const backendResponse = await fetch(
+      `${BACKEND_URL}/api/users/${encodeURIComponent(req.params.userId)}`,
+      {
+        method: "DELETE",
+        headers: headers,
+      }
+    );
+
+    const responseData = await backendResponse.json();
+
+    return res.status(backendResponse.status).json(responseData);
+  } catch (error) {
+    return res.status(503).json({
+      message: "Backend is not reachable.",
+    });
+  }
+});
+
 module.exports = router;
