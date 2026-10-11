@@ -4,7 +4,8 @@
   "description": "CineRate - Backend-for-Frontend (leitet Anfragen der SPA an das Kern-Backend weiter)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "cors": "^2.8.5",
