@@ -1,6 +1,5 @@
-// Beispiel-Route: zeigt, dass das BFF erreichbar ist und das Kern-Backend
-// ansprechen kann. Sobald Film-Endpunkte existieren, kombiniert das BFF hier
-// zusätzlich Daten von TMDB (siehe tmdbClient.js).
+// Statusroute: prüft, ob das BFF erreichbar ist und das Kern-Backend
+// antwortet. Die TMDB-Anbindung erfolgt im Kern-Backend.
 const express = require("express");
 const router = express.Router();
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
