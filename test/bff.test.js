@@ -389,3 +389,108 @@ test("GraphQL leitet Filmsuche und Authorization-Header weiter", async (t) => {
   assert.equal(response.body.errors, undefined);
   assert.deepEqual(response.body.data.filme, backendBody);
 });
+
+// REST Fehler testen
+test("GET /bff/movies gibt Backend-Fehler korrekt weiter", async (t) => {
+  const backendBody = {
+    message: "Invalid filter value.",
+  };
+
+  mockBackend(t, async () => {
+    return mockResponse(400, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/movies?genre=Unbekannt",
+    {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    }
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(response.body, backendBody);
+});
+
+// Fehlendes Token testen
+test("GET /bff/movies ohne Token gibt HTTP 401 weiter", async (t) => {
+  let forwardedOptions;
+
+  const backendBody = {
+    message: "Invalid token.",
+  };
+
+  mockBackend(t, async (_url, options) => {
+    forwardedOptions = options;
+
+    return mockResponse(401, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/movies?query=Interstellar",
+    {
+      method: "GET",
+    }
+  );
+
+  assert.equal(
+    forwardedOptions.headers.Authorization,
+    undefined
+  );
+  assert.equal(response.status, 401);
+  assert.deepEqual(response.body, backendBody);
+});
+
+// GraphQL Fehlerfall testen
+test("GraphQL weist ungültige Abfragen zurück", async (t) => {
+  let backendCalled = false;
+
+  mockBackend(t, async () => {
+    backendCalled = true;
+    throw new Error("Backend sollte nicht aufgerufen werden.");
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/graphql",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: {
+        query: `
+          query {
+            unbekanntesFeld
+          }
+        `,
+      },
+    }
+  );
+
+  assert.ok(
+    Array.isArray(response.body.errors),
+    "Die Antwort sollte GraphQL-Fehler enthalten."
+  );
+
+  assert.ok(
+    response.body.errors.length > 0,
+    "Mindestens ein GraphQL-Fehler sollte zurückgegeben werden."
+  );
+
+  assert.equal(
+    backendCalled,
+    false,
+    "Bei einer ungültigen Abfrage darf das Backend nicht aufgerufen werden."
+  );
+});
