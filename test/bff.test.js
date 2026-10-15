@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const express = require("express");
 const http = require("node:http");
 const moviesRoute = require("../routes/movies");
+const graphqlRoute = require("../routes/graphql");
 
 const usersRoute = require("../routes/users");
 const authRoute = require("../routes/auth");
@@ -14,6 +15,7 @@ function createTestServer(t) {
   app.use("/bff", usersRoute);
   app.use("/bff", authRoute);
   app.use("/bff", moviesRoute);
+  app.use("/bff/graphql", graphqlRoute);
 
   const server = app.listen(0, "127.0.0.1");
 
@@ -52,6 +54,7 @@ function mockBackend(t, implementation) {
 function mockResponse(status, body) {
   return {
     status,
+    ok: status >= 200 && status < 300,
     json: async () => body,
   };
 }
@@ -310,4 +313,79 @@ test("GET /bff/movies leitet Suchparameter und Authorization-Header weiter", asy
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, backendBody);
+});
+
+// GraphQL test Filmsuche und Authorization-Header
+test("GraphQL leitet Filmsuche und Authorization-Header weiter", async (t) => {
+  let forwardedUrl;
+  let forwardedOptions;
+
+  const backendBody = {
+    page: 2,
+    totalPages: 5,
+    movies: [
+      {
+        movieId: 157336,
+        title: "Interstellar",
+        posterUrl: "https://image.tmdb.org/example.jpg",
+      },
+    ],
+  };
+
+  mockBackend(t, async (url, options) => {
+    forwardedUrl = url;
+    forwardedOptions = options;
+
+    return mockResponse(200, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const graphQLQuery = `
+    query {
+      filme(genre: "Science Fiction", page: 2) {
+        page
+        totalPages
+        movies {
+          movieId
+          title
+          posterUrl
+        }
+      }
+    }
+  `;
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/graphql",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer test-token",
+      },
+      body: {
+        query: graphQLQuery,
+      },
+    }
+  );
+
+  const targetUrl = new URL(forwardedUrl);
+
+  assert.equal(targetUrl.pathname, "/api/movies");
+  assert.equal(
+    targetUrl.searchParams.get("genre"),
+    "Science Fiction"
+  );
+  assert.equal(targetUrl.searchParams.get("page"), "2");
+
+  assert.equal(forwardedOptions.method, "GET");
+  assert.equal(
+    forwardedOptions.headers.Authorization,
+    "Bearer test-token"
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.errors, undefined);
+  assert.deepEqual(response.body.data.filme, backendBody);
 });

@@ -5,6 +5,7 @@ const statusRoute = require("./routes/status");
 const usersRoute = require("./routes/users");
 const authRoute = require("./routes/auth");
 const moviesRoute = require("./routes/movies");
+const graphqlRoute = require("./routes/graphql");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -24,6 +25,7 @@ app.use("/bff", statusRoute);
 app.use("/bff", usersRoute);
 app.use("/bff", authRoute);
 app.use("/bff", moviesRoute);
+app.use("/bff/graphql", graphqlRoute);
 
 app.listen(PORT, () => {
   console.log(`CineRate-BFF läuft auf http://localhost:${PORT}`);
