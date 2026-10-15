@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
 const http = require("node:http");
+const moviesRoute = require("../routes/movies");
 
 const usersRoute = require("../routes/users");
 const authRoute = require("../routes/auth");
@@ -12,6 +13,7 @@ function createTestServer(t) {
   app.use(express.json());
   app.use("/bff", usersRoute);
   app.use("/bff", authRoute);
+  app.use("/bff", moviesRoute);
 
   const server = app.listen(0, "127.0.0.1");
 
@@ -253,4 +255,59 @@ test("nicht erreichbares Backend ergibt HTTP 503", async (t) => {
   assert.deepEqual(response.body, {
     message: "Backend is not reachable.",
   });
+});
+
+// Test for GET /bff/movies
+test("GET /bff/movies leitet Suchparameter und Authorization-Header weiter", async (t) => {
+  let forwardedUrl;
+  let forwardedOptions;
+
+  const backendBody = {
+    page: 2,
+    totalPages: 5,
+    movies: [
+      {
+        movieId: 157336,
+        title: "Interstellar",
+        posterUrl: "https://image.tmdb.org/example.jpg",
+      },
+    ],
+  };
+
+  mockBackend(t, async (url, options) => {
+    forwardedUrl = url;
+    forwardedOptions = options;
+
+    return mockResponse(200, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/movies?query=Interstellar&genre=Science%20Fiction&fsk=12&page=2",
+    {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    }
+  );
+
+  const targetUrl = new URL(forwardedUrl);
+
+  assert.equal(targetUrl.pathname, "/api/movies");
+  assert.equal(targetUrl.searchParams.get("query"), "Interstellar");
+  assert.equal(targetUrl.searchParams.get("genre"), "Science Fiction");
+  assert.equal(targetUrl.searchParams.get("fsk"), "12");
+  assert.equal(targetUrl.searchParams.get("page"), "2");
+
+  assert.equal(forwardedOptions.method, "GET");
+  assert.equal(
+    forwardedOptions.headers.Authorization,
+    "Bearer test-token"
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, backendBody);
 });
