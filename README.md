@@ -85,7 +85,7 @@ Die Tests in `test/bff.test.js` ersetzen das Backend durch eine Attrappe. Sie pr
 Die Heroku-App `cinerate-bff` braucht die Config Vars `BACKEND_URL` (URL der Backend-App) und `SPA_URL` (URL der SPA).
 
 ```
-heroku config:set BACKEND_URL=https://cinerate-backend.herokuapp.com SPA_URL=<URL der SPA> -a cinerate-bff
+heroku config:set BACKEND_URL=<URL der Backend-App> SPA_URL=<URL der SPA> -a cinerate-bff
 git push heroku main
 ```
 
