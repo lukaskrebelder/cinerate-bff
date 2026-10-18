@@ -4,32 +4,91 @@ Backend-for-Frontend (BFF) von CineRate. Teil der Fallstudie Software Engineerin
 
 ## Architektur
 
-Das BFF ist die einzige Schnittstelle, mit der die SPA (cinerate-spa) kommuniziert.
+Das BFF ist die einzige Schnittstelle für die beiden Touchpoints SPA ([cinerate-spa](../cinerate-spa)) und MPA ([cinerate-mpa](../cinerate-mpa)).
 
-Es leitet Anfragen an das Kern-Backend (cinerate-backend) weiter und gibt die Antworten an die SPA zurück.
+Es nimmt Anfragen entgegen, leitet sie an das Kern-Backend ([cinerate-backend](../cinerate-backend)) weiter und gibt die Antworten zurück. Den Header `Authorization: Bearer <token>` reicht es unverändert durch.
 
-Das Kern-Backend ist für die Verarbeitung der Nutzer-, Film- und Bewertungsdaten sowie den Zugriff auf die Datenbank zuständig. Es ruft bei Bedarf die TMDB-API auf und speichert die benötigten Filmdaten in der Datenbank.
+Das BFF bietet die Daten auf zwei Wegen an:
 
-Die SPA kommuniziert ausschließlich mit dem BFF und greift nicht direkt auf das Kern-Backend oder die TMDB-API zu.
+- **REST** unter `/bff/...`
+- **GraphQL** unter `/bff/graphql`. Die Resolver rufen das Backend ebenfalls per REST auf.
+
+Das BFF hat keinen Datenbankzugriff und ruft TMDB nicht selbst auf. Beides übernimmt das Kern-Backend.
+
+## Endpunkte
+
+### REST
+
+| Methode | Pfad | Weiter an | Zweck |
+| --- | --- | --- | --- |
+| GET | `/bff/status` | `GET /api/status` | Prüft, ob BFF und Backend laufen |
+| POST | `/bff/users` | `POST /api/users` | Registrieren |
+| DELETE | `/bff/users/{userId}` | `DELETE /api/users/{userId}` | Account löschen |
+| POST | `/bff/auth` | `POST /api/auth` | Anmelden |
+| DELETE | `/bff/auth` | `DELETE /api/auth` | Abmelden |
+| GET | `/bff/movies` | `GET /api/movies` | Filmsuche (Query: `query`, `genre`, `fsk`, `page`) |
+
+Statuscode und JSON-Antwort des Backends gibt das BFF unverändert weiter. Ist das Backend nicht erreichbar, antwortet es mit 503 `{ "message": "Backend is not reachable." }`. Die Statusroute antwortet in diesem Fall mit 502. Die Routen und Antworten sind in `CineRate_API-2.pdf` beschrieben.
+
+### GraphQL
+
+Endpunkt: `POST /bff/graphql`
+
+Beispiel für eine Filmsuche nach Genre:
+
+```graphql
+query {
+  filme(genre: "Science Fiction", page: 1) {
+    page
+    totalPages
+    movies {
+      movieId
+      title
+      posterUrl
+    }
+  }
+}
+```
+
+Alle Argumente von `filme` sind optional: `query`, `genre`, `fsk`, `page`. Meldet das Backend einen Fehler, steht dessen Meldung im Feld `errors` der GraphQL-Antwort.
 
 ## Setup
+
+```
 npm install
 cp .env.example .env
 npm start
+```
+
+Unter Windows (PowerShell): `copy .env.example .env` und `npm.cmd` statt `npm`.
 
 Der Server läuft lokal auf http://localhost:4000.
 
-Die lokale .env-Datei enthält die benötigten Umgebungsvariablen, insbesondere BACKEND_URL. Zugangsdaten gehören nicht ins Repository.
+| Variable | Bedeutung |
+| --- | --- |
+| `PORT` | Port des Servers (Heroku setzt ihn selbst) |
+| `BACKEND_URL` | Adresse des Kern-Backends |
+| `SPA_URL` | Adresse der SPA, für CORS. Lokal kann sie leer bleiben. |
+
+Zugangsdaten gehören nicht ins Repository.
+
+## Tests
+
+```
+npm test
+```
+
+Die Tests in `test/bff.test.js` ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
 
 ## Deployment auf Heroku
 
-Die bestehende Heroku-App cinerate-bff benötigt die Config Var BACKEND_URL, die auf die URL der Backend-App zeigt.
+Die Heroku-App `cinerate-bff` braucht die Config Vars `BACKEND_URL` (URL der Backend-App) und `SPA_URL` (URL der SPA).
 
-heroku config:set BACKEND_URL=https://cinerate-backend.herokuapp.com -a cinerate-bff
+```
+heroku config:set BACKEND_URL=https://cinerate-backend.herokuapp.com SPA_URL=<URL der SPA> -a cinerate-bff
 git push heroku main
-
-Vor dem Deployment muss sichergestellt sein, dass die verwendete Backend-URL stimmt und das lokale Git-Repository mit der bestehenden Heroku-App verbunden ist.
+```
 
 ## Tech-Stack
 
-Node.js, Express
+Node.js, Express, GraphQL (`graphql`, `graphql-http`)
