@@ -494,3 +494,48 @@ test("GraphQL weist ungültige Abfragen zurück", async (t) => {
     "Bei einer ungültigen Abfrage darf das Backend nicht aufgerufen werden."
   );
 });
+
+// KI-Log
+// Akzeptanzkriterium 5.11: Backend nicht erreichbar bei der Filmsuche (REST)
+test("GET /bff/movies ergibt HTTP 503, wenn das Backend nicht erreichbar ist", async (t) => {
+  mockBackend(t, async () => {
+    throw new Error("Network error");
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/movies?query=Interstellar", {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer test-token",
+    },
+  });
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(response.body, {
+    message: "Backend is not reachable.",
+  });
+});
+
+// Akzeptanzkriterium 5.11: Backend nicht erreichbar bei der Filmsuche (GraphQL)
+test("GraphQL meldet einen Fehler, wenn das Backend nicht erreichbar ist", async (t) => {
+  mockBackend(t, async () => {
+    throw new Error("Network error");
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+    },
+    body: {
+      query: "query { filme(query: \"Interstellar\") { page } }",
+    },
+  });
+
+  assert.ok(Array.isArray(response.body.errors));
+  assert.equal(response.body.errors[0].message, "Backend is not reachable.");
+});
