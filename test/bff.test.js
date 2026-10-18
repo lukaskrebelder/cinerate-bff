@@ -539,3 +539,84 @@ test("GraphQL meldet einen Fehler, wenn das Backend nicht erreichbar ist", async
   assert.ok(Array.isArray(response.body.errors));
   assert.equal(response.body.errors[0].message, "Backend is not reachable.");
 });
+
+// KI-Log: Tests für die Detailroute geprüft (US-5, Akzeptanzkriterien 5.5, 5.10, 5.11)
+test("GET /bff/movies/:movieId leitet ID und Authorization-Header weiter", async (t) => {
+  let forwardedUrl;
+  let forwardedOptions;
+
+  // description und avgRating dürfen null sein
+  const backendBody = {
+    movieId: 157336,
+    title: "Interstellar",
+    description: null,
+    genres: ["Science Fiction", "Drama"],
+    fsk: 12,
+    posterUrl: "https://image.tmdb.org/example.jpg",
+    avgRating: null,
+  };
+
+  mockBackend(t, async (url, options) => {
+    forwardedUrl = url;
+    forwardedOptions = options;
+
+    return mockResponse(200, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/movies/157336", {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer test-token",
+    },
+  });
+
+  assert.equal(new URL(forwardedUrl).pathname, "/api/movies/157336");
+  assert.equal(forwardedOptions.method, "GET");
+  assert.equal(forwardedOptions.headers.Authorization, "Bearer test-token");
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, backendBody);
+});
+
+test("GET /bff/movies/:movieId gibt 404 des Backends unverändert weiter", async (t) => {
+  const backendBody = {
+    message: "No movie found for this ID.",
+  };
+
+  mockBackend(t, async () => {
+    return mockResponse(404, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/movies/999999999", {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer test-token",
+    },
+  });
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(response.body, backendBody);
+});
+
+test("GET /bff/movies/:movieId ergibt HTTP 503, wenn das Backend nicht erreichbar ist", async (t) => {
+  mockBackend(t, async () => {
+    throw new Error("Network error");
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/movies/157336", {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer test-token",
+    },
+  });
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(response.body, {
+    message: "Backend is not reachable.",
+  });
+});
