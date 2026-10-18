@@ -2,6 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
 const http = require("node:http");
+const moviesRoute = require("../routes/movies");
+const graphqlRoute = require("../routes/graphql");
 
 const usersRoute = require("../routes/users");
 const authRoute = require("../routes/auth");
@@ -12,6 +14,8 @@ function createTestServer(t) {
   app.use(express.json());
   app.use("/bff", usersRoute);
   app.use("/bff", authRoute);
+  app.use("/bff", moviesRoute);
+  app.use("/bff/graphql", graphqlRoute);
 
   const server = app.listen(0, "127.0.0.1");
 
@@ -50,6 +54,7 @@ function mockBackend(t, implementation) {
 function mockResponse(status, body) {
   return {
     status,
+    ok: status >= 200 && status < 300,
     json: async () => body,
   };
 }
@@ -253,4 +258,239 @@ test("nicht erreichbares Backend ergibt HTTP 503", async (t) => {
   assert.deepEqual(response.body, {
     message: "Backend is not reachable.",
   });
+});
+
+// Test for GET /bff/movies
+test("GET /bff/movies leitet Suchparameter und Authorization-Header weiter", async (t) => {
+  let forwardedUrl;
+  let forwardedOptions;
+
+  const backendBody = {
+    page: 2,
+    totalPages: 5,
+    movies: [
+      {
+        movieId: 157336,
+        title: "Interstellar",
+        posterUrl: "https://image.tmdb.org/example.jpg",
+      },
+    ],
+  };
+
+  mockBackend(t, async (url, options) => {
+    forwardedUrl = url;
+    forwardedOptions = options;
+
+    return mockResponse(200, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/movies?query=Interstellar&genre=Science%20Fiction&fsk=12&page=2",
+    {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    }
+  );
+
+  const targetUrl = new URL(forwardedUrl);
+
+  assert.equal(targetUrl.pathname, "/api/movies");
+  assert.equal(targetUrl.searchParams.get("query"), "Interstellar");
+  assert.equal(targetUrl.searchParams.get("genre"), "Science Fiction");
+  assert.equal(targetUrl.searchParams.get("fsk"), "12");
+  assert.equal(targetUrl.searchParams.get("page"), "2");
+
+  assert.equal(forwardedOptions.method, "GET");
+  assert.equal(
+    forwardedOptions.headers.Authorization,
+    "Bearer test-token"
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, backendBody);
+});
+
+// GraphQL test Filmsuche und Authorization-Header
+test("GraphQL leitet Filmsuche und Authorization-Header weiter", async (t) => {
+  let forwardedUrl;
+  let forwardedOptions;
+
+  const backendBody = {
+    page: 2,
+    totalPages: 5,
+    movies: [
+      {
+        movieId: 157336,
+        title: "Interstellar",
+        posterUrl: "https://image.tmdb.org/example.jpg",
+      },
+    ],
+  };
+
+  mockBackend(t, async (url, options) => {
+    forwardedUrl = url;
+    forwardedOptions = options;
+
+    return mockResponse(200, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const graphQLQuery = `
+    query {
+      filme(genre: "Science Fiction", page: 2) {
+        page
+        totalPages
+        movies {
+          movieId
+          title
+          posterUrl
+        }
+      }
+    }
+  `;
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/graphql",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer test-token",
+      },
+      body: {
+        query: graphQLQuery,
+      },
+    }
+  );
+
+  const targetUrl = new URL(forwardedUrl);
+
+  assert.equal(targetUrl.pathname, "/api/movies");
+  assert.equal(
+    targetUrl.searchParams.get("genre"),
+    "Science Fiction"
+  );
+  assert.equal(targetUrl.searchParams.get("page"), "2");
+
+  assert.equal(forwardedOptions.method, "GET");
+  assert.equal(
+    forwardedOptions.headers.Authorization,
+    "Bearer test-token"
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.errors, undefined);
+  assert.deepEqual(response.body.data.filme, backendBody);
+});
+
+// REST Fehler testen
+test("GET /bff/movies gibt Backend-Fehler korrekt weiter", async (t) => {
+  const backendBody = {
+    message: "Invalid filter value.",
+  };
+
+  mockBackend(t, async () => {
+    return mockResponse(400, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/movies?genre=Unbekannt",
+    {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    }
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(response.body, backendBody);
+});
+
+// Fehlendes Token testen
+test("GET /bff/movies ohne Token gibt HTTP 401 weiter", async (t) => {
+  let forwardedOptions;
+
+  const backendBody = {
+    message: "Invalid token.",
+  };
+
+  mockBackend(t, async (_url, options) => {
+    forwardedOptions = options;
+
+    return mockResponse(401, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/movies?query=Interstellar",
+    {
+      method: "GET",
+    }
+  );
+
+  assert.equal(
+    forwardedOptions.headers.Authorization,
+    undefined
+  );
+  assert.equal(response.status, 401);
+  assert.deepEqual(response.body, backendBody);
+});
+
+// GraphQL Fehlerfall testen
+test("GraphQL weist ungültige Abfragen zurück", async (t) => {
+  let backendCalled = false;
+
+  mockBackend(t, async () => {
+    backendCalled = true;
+    throw new Error("Backend sollte nicht aufgerufen werden.");
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(
+    baseUrl,
+    "/bff/graphql",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: {
+        query: `
+          query {
+            unbekanntesFeld
+          }
+        `,
+      },
+    }
+  );
+
+  assert.ok(
+    Array.isArray(response.body.errors),
+    "Die Antwort sollte GraphQL-Fehler enthalten."
+  );
+
+  assert.ok(
+    response.body.errors.length > 0,
+    "Mindestens ein GraphQL-Fehler sollte zurückgegeben werden."
+  );
+
+  assert.equal(
+    backendCalled,
+    false,
+    "Bei einer ungültigen Abfrage darf das Backend nicht aufgerufen werden."
+  );
 });
