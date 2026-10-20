@@ -33,8 +33,8 @@ const schema = buildSchema(`
       fsk: Int
       page: Int
     ): MovieSearchResult!
-    
-     film(movieId: Int!): MovieDetail!
+
+    film(movieId: Int!): MovieDetail!
   }
 `);
 

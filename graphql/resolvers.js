@@ -57,7 +57,7 @@ async function filme(args, context) {
   return responseData;
 }
 
-// KI Log
+// KI-Log
 // Resolver für die GraphQL-Abfrage "film" (Detailansicht).
 async function film(args, context) {
   const backendUrl = `${BACKEND_URL.replace(/\/+$/, "")}/api/movies/${encodeURIComponent(
