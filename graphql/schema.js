@@ -14,6 +14,18 @@ const schema = buildSchema(`
     movies: [Movie!]!
   }
 
+  type MovieDetail {
+    movieId: Int!
+    title: String!
+    description: String
+    genres: [String!]!
+    fsk: Int
+    posterUrl: String
+    releaseYear: Int
+    runtime: Int
+    avgRating: Float
+  }
+
   type Query {
     filme(
       query: String
@@ -21,6 +33,8 @@ const schema = buildSchema(`
       fsk: Int
       page: Int
     ): MovieSearchResult!
+    
+     film(movieId: Int!): MovieDetail!
   }
 `);
 

@@ -620,3 +620,108 @@ test("GET /bff/movies/:movieId ergibt HTTP 503, wenn das Backend nicht erreichba
     message: "Backend is not reachable.",
   });
 });
+
+// KI-Log
+test("GraphQL film leitet ID und Token weiter und liefert die Detailfelder", async (t) => {
+  let forwardedUrl;
+  let forwardedOptions;
+
+  // Antwortform laut CineRate_API-2.pdf; mehrere Felder dürfen null sein
+  const backendBody = {
+    movieId: 157336,
+    title: "Interstellar",
+    description: null,
+    genres: ["Drama", "Science Fiction"],
+    fsk: 12,
+    posterUrl: null,
+    releaseYear: 2014,
+    runtime: 169,
+    avgRating: null,
+  };
+
+  mockBackend(t, async (url, options) => {
+    forwardedUrl = url;
+    forwardedOptions = options;
+
+    return mockResponse(200, backendBody);
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+    },
+    body: {
+      query: `
+        query {
+          film(movieId: 157336) {
+            movieId
+            title
+            description
+            genres
+            fsk
+            posterUrl
+            releaseYear
+            runtime
+            avgRating
+          }
+        }
+      `,
+    },
+  });
+
+  assert.equal(new URL(forwardedUrl).pathname, "/api/movies/157336");
+  assert.equal(forwardedOptions.headers.Authorization, "Bearer test-token");
+  assert.equal(response.body.errors, undefined);
+  assert.deepEqual(response.body.data.film, backendBody);
+});
+
+test("GraphQL film gibt 404 des Backends als Fehler zurück", async (t) => {
+  mockBackend(t, async () => {
+    return mockResponse(404, { message: "No movie found for this ID." });
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+    },
+    body: {
+      query: "query { film(movieId: 999999999) { title } }",
+    },
+  });
+
+  assert.ok(Array.isArray(response.body.errors));
+  assert.equal(response.body.errors[0].message, "No movie found for this ID.");
+});
+
+test("GraphQL film lehnt eine ungültige ID ab, ohne das Backend zu fragen", async (t) => {
+  let backendCalled = false;
+
+  mockBackend(t, async () => {
+    backendCalled = true;
+    throw new Error("Backend sollte nicht aufgerufen werden.");
+  });
+
+  const baseUrl = await createTestServer(t);
+
+  const response = await sendRequest(baseUrl, "/bff/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+    },
+    body: {
+      query: 'query { film(movieId: "abc") { title } }',
+    },
+  });
+
+  assert.ok(Array.isArray(response.body.errors));
+  assert.equal(backendCalled, false);
+});
