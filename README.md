@@ -1,3 +1,4 @@
+<!-- KI-Log -->
 # cinerate-bff
 
 Backend-for-Frontend (BFF) von CineRate. Teil der Fallstudie Software Engineering, WS 2026/27.
@@ -27,6 +28,7 @@ Das BFF hat keinen Datenbankzugriff und ruft TMDB nicht selbst auf. Beides über
 | POST | `/bff/auth` | `POST /api/auth` | Anmelden |
 | DELETE | `/bff/auth` | `DELETE /api/auth` | Abmelden |
 | GET | `/bff/movies` | `GET /api/movies` | Filmsuche (Query: `query`, `genre`, `fsk`, `page`) |
+| GET | `/bff/movies/{movieId}` | `GET /api/movies/{movieId}` | Filmdetails (`movieId` = TMDB-ID) |
 
 Statuscode und JSON-Antwort des Backends gibt das BFF unverändert weiter. Ist das Backend nicht erreichbar, antwortet es mit 503 `{ "message": "Backend is not reachable." }`. Die Statusroute antwortet in diesem Fall mit 502. Die Routen und Antworten sind in `CineRate_API-2.pdf` beschrieben.
 
@@ -51,6 +53,24 @@ query {
 ```
 
 Alle Argumente von `filme` sind optional: `query`, `genre`, `fsk`, `page`. Meldet das Backend einen Fehler, steht dessen Meldung im Feld `errors` der GraphQL-Antwort.
+
+Beispiel für die Detailansicht eines Films:
+
+```graphql
+query {
+  film(movieId: 157336) {
+    title
+    description
+    genres
+    fsk
+    releaseYear
+    runtime
+    avgRating
+  }
+}
+```
+
+`movieId` ist Pflicht und muss eine ganze Zahl sein. `description`, `fsk`, `posterUrl`, `releaseYear`, `runtime` und `avgRating` können `null` sein.
 
 ## Setup
 
