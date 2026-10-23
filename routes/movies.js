@@ -45,4 +45,36 @@ router.get("/movies", async (req, res) => {
   }
 });
 
+// KI-Log: Detailroute für US-5 (Akzeptanzkriterien 5.5, 5.6, 5.10)
+// GET /bff/movies/:movieId leitet die Detailansicht an GET /api/movies/{movieId} weiter.
+router.get("/movies/:movieId", async (req, res) => {
+  try {
+    const backendUrl = `${BACKEND_URL.replace(/\/+$/, "")}/api/movies/${encodeURIComponent(
+      req.params.movieId
+    )}`;
+
+    // Authorization-Header an das Backend weitergeben.
+    const headers = {};
+    const authorization = req.get("Authorization");
+
+    if (authorization) {
+      headers.Authorization = authorization;
+    }
+
+    const backendResponse = await fetch(backendUrl, {
+      method: "GET",
+      headers,
+    });
+
+    const responseData = await backendResponse.json();
+
+    // Status und JSON-Antwort des Backends unverändert weitergeben.
+    return res.status(backendResponse.status).json(responseData);
+  } catch (error) {
+    return res.status(503).json({
+      message: "Backend is not reachable.",
+    });
+  }
+});
+
 module.exports = router;

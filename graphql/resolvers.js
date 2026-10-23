@@ -57,6 +57,48 @@ async function filme(args, context) {
   return responseData;
 }
 
+// KI-Log
+// Resolver für die GraphQL-Abfrage "film" (Detailansicht).
+async function film(args, context) {
+  const backendUrl = `${BACKEND_URL.replace(/\/+$/, "")}/api/movies/${encodeURIComponent(
+    args.movieId
+  )}`;
+
+  // Authorization-Header an das Backend weitergeben.
+  const headers = {};
+
+  if (context.authorization) {
+    headers.Authorization = context.authorization;
+  }
+
+  let backendResponse;
+
+  try {
+    backendResponse = await fetch(backendUrl, {
+      method: "GET",
+      headers,
+    });
+  } catch (error) {
+    throw new Error("Backend is not reachable.");
+  }
+
+  let responseData;
+
+  try {
+    responseData = await backendResponse.json();
+  } catch (error) {
+    throw new Error("Invalid response from backend.");
+  }
+
+  // Fehlerantworten des Backends (z. B. 404) als GraphQL-Fehler zurückgeben.
+  if (!backendResponse.ok) {
+    throw new Error(responseData.message || "Loading the movie failed.");
+  }
+
+  return responseData;
+}
+
 module.exports = {
   filme,
+  film,
 };
