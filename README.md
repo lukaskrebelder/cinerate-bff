@@ -29,6 +29,8 @@ Das BFF hat keinen Datenbankzugriff und ruft TMDB nicht selbst auf. Beides über
 | DELETE | `/bff/auth` | `DELETE /api/auth` | Abmelden |
 | GET | `/bff/movies` | `GET /api/movies` | Filmsuche (Query: `query`, `genre`, `fsk`, `page`) |
 | GET | `/bff/movies/{movieId}` | `GET /api/movies/{movieId}` | Filmdetails (`movieId` = TMDB-ID) |
+| GET | `/bff/movies/{movieId}/ratings` | `GET /api/movies/{movieId}/ratings` | Bewertungen eines Films: `avgRating`, `ratingCount`, `ownStars` |
+| POST | `/bff/movies/{movieId}/ratings` | `POST /api/movies/{movieId}/ratings` | Bewertung abgeben oder ändern (Body: `{ "stars": 1–5 }`), 201 neu / 200 geändert |
 
 Statuscode und JSON-Antwort des Backends gibt das BFF unverändert weiter. Ist das Backend nicht erreichbar, antwortet es mit 503 `{ "message": "Backend is not reachable." }`. Die Statusroute antwortet in diesem Fall mit 502. Die Routen und Antworten sind in `CineRate_API-2.pdf` beschrieben.
 
@@ -52,7 +54,7 @@ query {
 }
 ```
 
-Alle Argumente von `filme` sind optional: `query`, `genre`, `fsk`, `page`. Meldet das Backend einen Fehler, steht dessen Meldung im Feld `errors` der GraphQL-Antwort.
+Alle Argumente von `filme` sind optional: `query`, `genre`, `fsk`, `page`. Fehler siehe Abschnitt „Fehler“ weiter unten.
 
 Beispiel für die Detailansicht eines Films:
 
@@ -71,6 +73,49 @@ query {
 ```
 
 `movieId` ist Pflicht und muss eine ganze Zahl sein. `description`, `fsk`, `posterUrl`, `releaseYear`, `runtime` und `avgRating` können `null` sein.
+
+Beispiel für die Bewertungen eines Films:
+
+```graphql
+query {
+  bewertungen(movieId: 157336) {
+    avgRating
+    ratingCount
+    ownStars
+  }
+}
+```
+
+Ohne Bewertungen sind `avgRating` und `ownStars` `null` und `ratingCount` ist 0.
+
+Bewertung abgeben oder die eigene ändern (Mutation):
+
+```graphql
+mutation {
+  filmBewerten(movieId: 157336, stars: 4) {
+    message
+    stars
+    avgRating
+  }
+}
+```
+
+`stars` muss eine ganze Zahl sein. Kommazahlen lehnt GraphQL selbst ab, Werte außerhalb von 1 bis 5 lehnt das Backend mit 400 ab.
+
+#### Fehler
+
+Fehler stehen im Feld `errors` der Antwort, der HTTP-Status ist dabei 200. Kommt der Fehler vom Backend, steht dessen Statuscode in `extensions.status`:
+
+```json
+{
+  "errors": [
+    { "message": "Invalid token.", "extensions": { "status": 401 } }
+  ],
+  "data": null
+}
+```
+
+Ist das Backend nicht erreichbar, ist der Status 503. Fehler, die GraphQL selbst erkennt (z. B. falscher Datentyp), haben keinen `extensions.status`.
 
 ## Setup
 
@@ -98,7 +143,7 @@ Zugangsdaten gehören nicht ins Repository.
 npm test
 ```
 
-Die Tests in `test/bff.test.js` ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
+Die Tests in `test/bff.test.js` und `test/ratings.test.js` ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
 
 ## Deployment auf Heroku
 
