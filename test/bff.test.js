@@ -538,6 +538,7 @@ test("GraphQL meldet einen Fehler, wenn das Backend nicht erreichbar ist", async
 
   assert.ok(Array.isArray(response.body.errors));
   assert.equal(response.body.errors[0].message, "Backend is not reachable.");
+    assert.equal(response.body.errors[0].extensions.status, 503);
 });
 
 // KI-Log: Tests für die Detailroute geprüft (US-5, Akzeptanzkriterien 5.5, 5.10, 5.11)
@@ -616,8 +617,9 @@ test("GET /bff/movies/:movieId ergibt HTTP 503, wenn das Backend nicht erreichba
   });
 
   assert.equal(response.status, 503);
-  assert.deepEqual(response.body, {
+  assert.deepEqual(response.body, { 
     message: "Backend is not reachable.",
+
   });
 });
 
@@ -699,6 +701,7 @@ test("GraphQL film gibt 404 des Backends als Fehler zurück", async (t) => {
 
   assert.ok(Array.isArray(response.body.errors));
   assert.equal(response.body.errors[0].message, "No movie found for this ID.");
+    assert.equal(response.body.errors[0].extensions.status, 404);
 });
 
 test("GraphQL film lehnt eine ungültige ID ab, ohne das Backend zu fragen", async (t) => {
