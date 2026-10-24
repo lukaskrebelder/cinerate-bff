@@ -113,7 +113,67 @@ async function film(args, context) {
   return responseData;
 }
 
+// KI-Log C
+// Gemeinsamer Backend-Aufruf für neue Resolver: Token weitergeben, Fehler mit Statuscode werfen.
+async function requestBackend(path, { method = "GET", body, authorization, fallbackMessage }) {
+  const headers = {};
+
+  if (authorization) {
+    headers.Authorization = authorization;
+  }
+
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  let backendResponse;
+
+  try {
+    backendResponse = await fetch(`${BACKEND_URL.replace(/\/+$/, "")}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (error) {
+    throw backendError(503, "Backend is not reachable.");
+  }
+
+  let responseData;
+
+  try {
+    responseData = await backendResponse.json();
+  } catch (error) {
+    throw backendError(502, "Invalid response from backend.");
+  }
+
+  if (!backendResponse.ok) {
+    throw backendError(backendResponse.status, responseData.message || fallbackMessage);
+  }
+
+  return responseData;
+}
+
+// Resolver für die Abfrage "bewertungen": Durchschnitt, Anzahl und eigene Sterne.
+async function bewertungen(args, context) {
+  return requestBackend(`/api/movies/${encodeURIComponent(args.movieId)}/ratings`, {
+    authorization: context.authorization,
+    fallbackMessage: "Loading the ratings failed.",
+  });
+}
+
+// Resolver für die Mutation "filmBewerten": Bewertung abgeben oder die eigene ändern.
+async function filmBewerten(args, context) {
+  return requestBackend(`/api/movies/${encodeURIComponent(args.movieId)}/ratings`, {
+    method: "POST",
+    body: { stars: args.stars },
+    authorization: context.authorization,
+    fallbackMessage: "Saving the rating failed.",
+  });
+}
+
 module.exports = {
   filme,
   film,
+  bewertungen,
+  filmBewerten
 };

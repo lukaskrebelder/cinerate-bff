@@ -25,6 +25,18 @@ const schema = buildSchema(`
     runtime: Int
     avgRating: Float
   }
+  
+    type RatingSummary {
+    avgRating: Float
+    ratingCount: Int!
+    ownStars: Int
+  }
+
+  type RatingResult {
+    message: String!
+    stars: Int!
+    avgRating: Float
+  }
 
   type Query {
     filme(
@@ -35,6 +47,10 @@ const schema = buildSchema(`
     ): MovieSearchResult!
 
     film(movieId: Int!): MovieDetail!
+    bewertungen(movieId: Int!): RatingSummary!
+  } 
+    type Mutation {
+    filmBewerten(movieId: Int!, stars: Int!): RatingResult!
   }
 `);
 
