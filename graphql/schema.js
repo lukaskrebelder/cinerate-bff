@@ -38,6 +38,10 @@ const schema = buildSchema(`
     avgRating: Float
   }
 
+  type MessageResult {
+    message: String!
+  }
+
   type Query {
     filme(
       query: String
@@ -48,10 +52,14 @@ const schema = buildSchema(`
 
     film(movieId: Int!): MovieDetail!
     bewertungen(movieId: Int!): RatingSummary!
+    watchlist: [Movie!]!
   } 
     type Mutation {
     filmBewerten(movieId: Int!, stars: Int!): RatingResult!
+    filmVormerken(movieId: Int!): MessageResult!
+    vonWatchlistEntfernen(movieId: Int!): MessageResult!
   }
+  
 `);
 
 module.exports = schema;
