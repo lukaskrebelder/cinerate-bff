@@ -171,9 +171,42 @@ async function filmBewerten(args, context) {
   });
 }
 
+// KI-Log C
+// Resolver für die Abfrage "watchlist": Filme des angemeldeten Nutzers, neueste zuerst.
+// Das Backend liefert { movies: [...] }, die MPA bekommt direkt die Liste.
+async function watchlist(args, context) {
+  const responseData = await requestBackend("/api/watchlist", {
+    authorization: context.authorization,
+    fallbackMessage: "Loading the watchlist failed.",
+  });
+  return responseData.movies;
+}
+
+// Resolver für die Mutation "filmVormerken": Film auf die Watchlist setzen.
+async function filmVormerken(args, context) {
+  return requestBackend("/api/watchlist", {
+    method: "POST",
+    body: { movieId: args.movieId },
+    authorization: context.authorization,
+    fallbackMessage: "Adding the movie failed.",
+  });
+}
+
+// Resolver für die Mutation "vonWatchlistEntfernen": Film von der Watchlist nehmen.
+async function vonWatchlistEntfernen(args, context) {
+  return requestBackend(`/api/watchlist/${encodeURIComponent(args.movieId)}`, {
+    method: "DELETE",
+    authorization: context.authorization,
+    fallbackMessage: "Removing the movie failed.",
+  });
+}
+
 module.exports = {
   filme,
   film,
   bewertungen,
-  filmBewerten
+  filmBewerten,
+  watchlist,
+  filmVormerken,
+  vonWatchlistEntfernen,
 };

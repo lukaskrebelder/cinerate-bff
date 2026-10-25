@@ -2,12 +2,14 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const express = require("express");
 const watchlistRoute = require("../routes/watchlist");
+const graphqlRoute = require("../routes/graphql");
 
 // Startet das BFF nur mit der Watchlist-Route auf einem freien Port.
 function createTestServer(t) {
   const app = express();
   app.use(express.json());
   app.use("/bff", watchlistRoute);
+  app.use("/bff/graphql", graphqlRoute);
 
   const server = app.listen(0, "127.0.0.1");
 
@@ -35,7 +37,7 @@ function mockResponse(status, body) {
 
 const AUTH = { Authorization: "Bearer testtoken" };
 
-// KI-Log C11
+// KI-Log C
 test("GET /bff/watchlist leitet Token weiter und liefert die Filme", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -144,4 +146,95 @@ test("Watchlist-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist",
   assert.equal(getResponse.status, 503);
   assert.equal(postResponse.status, 503);
   assert.equal(deleteResponse.status, 503);
+});
+
+// KI-Log C
+// Schickt eine GraphQL-Anfrage an das Test-BFF (mit dem echten fetch).
+async function sendGraphql(fetchFn, baseUrl, query) {
+  const response = await fetchFn(`${baseUrl}/bff/graphql`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...AUTH },
+    body: JSON.stringify({ query }),
+  });
+  return response.json();
+}
+
+test("GraphQL watchlist liefert die Liste der Filme", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+  let backendCall;
+  const movies = [{ movieId: 157336, title: "Interstellar", posterUrl: null }];
+
+  mockBackend(t, async (url, options) => {
+    backendCall = { url: String(url), options };
+    return mockResponse(200, { movies });
+  });
+
+  const body = await sendGraphql(originalFetch, baseUrl, "{ watchlist { movieId title posterUrl } }");
+
+  assert.equal(body.errors, undefined);
+  assert.deepEqual(body.data.watchlist, movies);
+  assert.match(backendCall.url, /\/api\/watchlist$/);
+  assert.equal(backendCall.options.method, "GET");
+  assert.equal(backendCall.options.headers.Authorization, "Bearer testtoken");
+});
+
+test("GraphQL filmVormerken schickt die movieId per POST", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+  let backendCall;
+
+  mockBackend(t, async (url, options) => {
+    backendCall = { url: String(url), options };
+    return mockResponse(201, { message: "Movie was added to your watchlist." });
+  });
+
+  const body = await sendGraphql(originalFetch, baseUrl, "mutation { filmVormerken(movieId: 157336) { message } }");
+
+  assert.equal(body.errors, undefined);
+  assert.equal(body.data.filmVormerken.message, "Movie was added to your watchlist.");
+  assert.equal(backendCall.options.method, "POST");
+  assert.deepEqual(JSON.parse(backendCall.options.body), { movieId: 157336 });
+});
+
+test("GraphQL filmVormerken meldet 409 mit extensions.status", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+
+  mockBackend(t, async () => mockResponse(409, { message: "Movie is already on your watchlist." }));
+
+  const body = await sendGraphql(originalFetch, baseUrl, "mutation { filmVormerken(movieId: 157336) { message } }");
+
+  assert.equal(body.errors[0].message, "Movie is already on your watchlist.");
+  assert.equal(body.errors[0].extensions.status, 409);
+});
+
+test("GraphQL vonWatchlistEntfernen schickt DELETE mit der ID", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+  let backendCall;
+
+  mockBackend(t, async (url, options) => {
+    backendCall = { url: String(url), options };
+    return mockResponse(200, { message: "Movie was removed from your watchlist." });
+  });
+
+  const body = await sendGraphql(originalFetch, baseUrl, "mutation { vonWatchlistEntfernen(movieId: 157336) { message } }");
+
+  assert.equal(body.errors, undefined);
+  assert.equal(body.data.vonWatchlistEntfernen.message, "Movie was removed from your watchlist.");
+  assert.match(backendCall.url, /\/api\/watchlist\/157336$/);
+  assert.equal(backendCall.options.method, "DELETE");
+});
+
+test("GraphQL vonWatchlistEntfernen meldet 404 mit extensions.status", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+
+  mockBackend(t, async () => mockResponse(404, { message: "Movie is not on your watchlist." }));
+
+  const body = await sendGraphql(originalFetch, baseUrl, "mutation { vonWatchlistEntfernen(movieId: 157336) { message } }");
+
+  assert.equal(body.errors[0].message, "Movie is not on your watchlist.");
+  assert.equal(body.errors[0].extensions.status, 404);
 });
