@@ -1,43 +1,12 @@
+// Tests für Watchlist (US-3): routes/watchlist.js und GraphQL watchlist / filmVormerken / vonWatchlistEntfernen
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const express = require("express");
-const watchlistRoute = require("../routes/watchlist");
-const graphqlRoute = require("../routes/graphql");
-
-// Startet das BFF nur mit der Watchlist-Route auf einem freien Port.
-function createTestServer(t) {
-  const app = express();
-  app.use(express.json());
-  app.use("/bff", watchlistRoute);
-  app.use("/bff/graphql", graphqlRoute);
-
-  const server = app.listen(0, "127.0.0.1");
-
-  return new Promise((resolve, reject) => {
-    server.once("listening", () => {
-      t.after(() => new Promise((done) => server.close(() => done())));
-      resolve(`http://127.0.0.1:${server.address().port}`);
-    });
-    server.once("error", reject);
-  });
-}
-
-// Ersetzt fetch, damit kein echtes Backend nötig ist. Danach wird das echte fetch zurückgesetzt.
-function mockBackend(t, implementation) {
-  const originalFetch = global.fetch;
-  global.fetch = implementation;
-  t.after(() => {
-    global.fetch = originalFetch;
-  });
-}
-
-function mockResponse(status, body) {
-  return { status, ok: status >= 200 && status < 300, json: async () => body };
-}
+const { createTestServer, mockBackend, mockResponse, sendGraphql } = require("./helpers");
 
 const AUTH = { Authorization: "Bearer testtoken" };
 
 // KI-Log C
+// Watchlist abrufen: der Token geht mit, die Filmliste kommt unverändert zurück.
 test("GET /bff/watchlist leitet Token weiter und liefert die Filme", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -58,6 +27,7 @@ test("GET /bff/watchlist leitet Token weiter und liefert die Filme", async (t) =
   assert.equal(backendCall.options.headers.Authorization, "Bearer testtoken");
 });
 
+// Film vormerken: nur die movieId geht weiter (extra-Feld nicht), 201 kommt durch.
 test("POST /bff/watchlist gibt nur movieId weiter (201)", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -81,6 +51,7 @@ test("POST /bff/watchlist gibt nur movieId weiter (201)", async (t) => {
   assert.deepEqual(JSON.parse(backendCall.options.body), { movieId: 157336 });
 });
 
+// Film ist schon auf der Watchlist: die 409 vom Backend wird weitergegeben.
 test("POST /bff/watchlist gibt 409 weiter, wenn der Film schon drauf ist", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -97,6 +68,7 @@ test("POST /bff/watchlist gibt 409 weiter, wenn der Film schon drauf ist", async
   assert.deepEqual(await response.json(), { message: "Movie is already on your watchlist." });
 });
 
+// Film entfernen: ID im Pfad, Methode DELETE, Token dabei.
 test("DELETE /bff/watchlist/:movieId leitet ID und Token weiter (200)", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -115,6 +87,7 @@ test("DELETE /bff/watchlist/:movieId leitet ID und Token weiter (200)", async (t
   assert.equal(backendCall.options.headers.Authorization, "Bearer testtoken");
 });
 
+// Film war gar nicht auf der Watchlist: die 404 vom Backend kommt durch.
 test("DELETE /bff/watchlist/:movieId gibt 404 weiter, wenn der Film nicht drauf ist", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -127,6 +100,7 @@ test("DELETE /bff/watchlist/:movieId gibt 404 weiter, wenn der Film nicht drauf 
   assert.deepEqual(await response.json(), { message: "Movie is not on your watchlist." });
 });
 
+// Backend ist weg: GET, POST und DELETE antworten alle mit 503.
 test("Watchlist-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -149,16 +123,8 @@ test("Watchlist-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist",
 });
 
 // KI-Log C
-// Schickt eine GraphQL-Anfrage an das Test-BFF (mit dem echten fetch).
-async function sendGraphql(fetchFn, baseUrl, query) {
-  const response = await fetchFn(`${baseUrl}/bff/graphql`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...AUTH },
-    body: JSON.stringify({ query }),
-  });
-  return response.json();
-}
-
+// GraphQL-Tests (sendGraphql kommt aus helpers.js)
+// Watchlist per GraphQL: kommt direkt als Liste zurück (ohne movies-Hülle wie bei REST).
 test("GraphQL watchlist liefert die Liste der Filme", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -179,6 +145,7 @@ test("GraphQL watchlist liefert die Liste der Filme", async (t) => {
   assert.equal(backendCall.options.headers.Authorization, "Bearer testtoken");
 });
 
+// Die Mutation macht einen POST mit der movieId und gibt die Meldung zurück.
 test("GraphQL filmVormerken schickt die movieId per POST", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -197,6 +164,7 @@ test("GraphQL filmVormerken schickt die movieId per POST", async (t) => {
   assert.deepEqual(JSON.parse(backendCall.options.body), { movieId: 157336 });
 });
 
+// Schon vorgemerkt: Fehlertext plus Status 409 in extensions.
 test("GraphQL filmVormerken meldet 409 mit extensions.status", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -209,6 +177,7 @@ test("GraphQL filmVormerken meldet 409 mit extensions.status", async (t) => {
   assert.equal(body.errors[0].extensions.status, 409);
 });
 
+// Die Mutation macht einen DELETE auf /api/watchlist/<ID>.
 test("GraphQL vonWatchlistEntfernen schickt DELETE mit der ID", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -227,6 +196,7 @@ test("GraphQL vonWatchlistEntfernen schickt DELETE mit der ID", async (t) => {
   assert.equal(backendCall.options.method, "DELETE");
 });
 
+// Nicht auf der Watchlist: Fehlertext plus Status 404 in extensions.
 test("GraphQL vonWatchlistEntfernen meldet 404 mit extensions.status", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
