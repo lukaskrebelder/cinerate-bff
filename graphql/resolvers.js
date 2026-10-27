@@ -201,6 +201,15 @@ async function vonWatchlistEntfernen(args, context) {
   });
 }
 
+// KI-Log C
+// Resolver für die Abfrage "vorschlaege": Lieblingsgenre und bis zu 10 Filmvorschläge (US-1).
+async function vorschlaege(args, context) {
+  return requestBackend("/api/recommendations", {
+    authorization: context.authorization,
+    fallbackMessage: "Loading the recommendations failed.",
+  });
+}
+
 module.exports = {
   filme,
   film,
@@ -209,4 +218,5 @@ module.exports = {
   watchlist,
   filmVormerken,
   vonWatchlistEntfernen,
+  vorschlaege,
 };

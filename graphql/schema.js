@@ -42,6 +42,18 @@ const schema = buildSchema(`
     message: String!
   }
 
+    type Recommendation {
+    movieId: Int!
+    title: String!
+    description: String
+    posterUrl: String
+  }
+
+  type Recommendations {
+    favoriteGenre: String!
+    movies: [Recommendation!]!
+  }
+
   type Query {
     filme(
       query: String
@@ -53,6 +65,7 @@ const schema = buildSchema(`
     film(movieId: Int!): MovieDetail!
     bewertungen(movieId: Int!): RatingSummary!
     watchlist: [Movie!]!
+    vorschlaege: Recommendations!
   } 
     type Mutation {
     filmBewerten(movieId: Int!, stars: Int!): RatingResult!
