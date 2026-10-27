@@ -1,41 +1,10 @@
+// Tests für Bewertungen (US-4): routes/ratings.js und GraphQL bewertungen / filmBewerten
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const express = require("express");
-const ratingsRoute = require("../routes/ratings");
-const graphqlRoute = require("../routes/graphql");
-
-// Startet das BFF nur mit der Bewertungs-Route auf einem freien Port.
-function createTestServer(t) {
-  const app = express();
-  app.use(express.json());
-  app.use("/bff", ratingsRoute);
-  app.use("/bff/graphql", graphqlRoute);
-
-  const server = app.listen(0, "127.0.0.1");
-
-  return new Promise((resolve, reject) => {
-    server.once("listening", () => {
-      t.after(() => new Promise((done) => server.close(() => done())));
-      resolve(`http://127.0.0.1:${server.address().port}`);
-    });
-    server.once("error", reject);
-  });
-}
-
-// Ersetzt fetch, damit kein echtes Backend nötig ist. Danach wird das echte fetch zurückgesetzt.
-function mockBackend(t, implementation) {
-  const originalFetch = global.fetch;
-  global.fetch = implementation;
-  t.after(() => {
-    global.fetch = originalFetch;
-  });
-}
-
-function mockResponse(status, body) {
-  return { status, ok: status >= 200 && status < 300, json: async () => body };
-}
+const { createTestServer, mockBackend, mockResponse, sendGraphql } = require("./helpers");
 
 // KI-Log C8
+// Neue Bewertung: nur die Sterne gehen weiter (extra-Feld nicht), 201 kommt durch.
 test("POST /bff/movies/:movieId/ratings leitet Sterne und Token weiter (201 neu)", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -60,6 +29,7 @@ test("POST /bff/movies/:movieId/ratings leitet Sterne und Token weiter (201 neu)
   assert.deepEqual(JSON.parse(backendCall.options.body), { stars: 4 });
 });
 
+// Bewertung schon vorhanden: das Backend sagt 200 (geändert), das BFF übernimmt das.
 test("POST /bff/movies/:movieId/ratings gibt 200 weiter, wenn die eigene Bewertung geändert wird", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -76,6 +46,7 @@ test("POST /bff/movies/:movieId/ratings gibt 200 weiter, wenn die eigene Bewertu
   assert.equal((await response.json()).message, "Your rating has been updated.");
 });
 
+// 7 Sterne prüft nicht das BFF, sondern das Backend – das BFF reicht die 400 nur durch.
 test("POST /bff/movies/:movieId/ratings gibt 400 bei ungültigen Sternen weiter", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -92,6 +63,7 @@ test("POST /bff/movies/:movieId/ratings gibt 400 bei ungültigen Sternen weiter"
   assert.deepEqual(await response.json(), { message: "Please choose 1 to 5 stars." });
 });
 
+// Film ohne Bewertungen: null und 0 sollen genau so ankommen (nicht zu 0 umgewandelt).
 test("GET /bff/movies/:movieId/ratings liefert Durchschnitt, Anzahl und eigene Sterne", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -112,6 +84,7 @@ test("GET /bff/movies/:movieId/ratings liefert Durchschnitt, Anzahl und eigene S
   assert.equal(backendCall.options.headers.Authorization, "Bearer testtoken");
 });
 
+// Ohne gültigen Token sagt das Backend nein, das BFF gibt die 401 weiter.
 test("GET /bff/movies/:movieId/ratings gibt 401 ohne gültiges Token weiter", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -124,6 +97,7 @@ test("GET /bff/movies/:movieId/ratings gibt 401 ohne gültiges Token weiter", as
   assert.deepEqual(await response.json(), { message: "Invalid token." });
 });
 
+// Backend ist weg: GET und POST antworten beide mit 503.
 test("Bewertungs-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -145,16 +119,8 @@ test("Bewertungs-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist"
 });
 
 // KI-Log C
-// Schickt eine GraphQL-Anfrage an das Test-BFF (mit dem echten fetch).
-async function sendGraphql(fetchFn, baseUrl, query) {
-  const response = await fetchFn(`${baseUrl}/bff/graphql`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer testtoken" },
-    body: JSON.stringify({ query }),
-  });
-  return response.json();
-}
-
+// GraphQL-Tests (sendGraphql kommt aus helpers.js)
+// Bewertungen per GraphQL: richtige Route, GET, Token dabei, null-Werte bleiben null.
 test("GraphQL bewertungen leitet ID und Token weiter und liefert null-Werte", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -174,6 +140,7 @@ test("GraphQL bewertungen leitet ID und Token weiter und liefert null-Werte", as
   assert.equal(backendCall.options.headers.Authorization, "Bearer testtoken");
 });
 
+// Die Mutation macht einen POST mit den Sternen und gibt message, stars und avgRating zurück.
 test("GraphQL filmBewerten schickt die Sterne per POST und liefert die Antwort", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -196,6 +163,7 @@ test("GraphQL filmBewerten schickt die Sterne per POST und liefert die Antwort",
   assert.deepEqual(JSON.parse(backendCall.options.body), { stars: 5 });
 });
 
+// Ungültige Sterne: Fehlertext vom Backend plus Status 400 in extensions.
 test("GraphQL filmBewerten meldet 400 des Backends mit extensions.status", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -208,6 +176,7 @@ test("GraphQL filmBewerten meldet 400 des Backends mit extensions.status", async
   assert.equal(body.errors[0].extensions.status, 400);
 });
 
+// Token abgelehnt: Fehlertext plus Status 401 in extensions.
 test("GraphQL bewertungen meldet 401 des Backends mit extensions.status", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;
@@ -220,6 +189,7 @@ test("GraphQL bewertungen meldet 401 des Backends mit extensions.status", async 
   assert.equal(body.errors[0].extensions.status, 401);
 });
 
+// 3.5 ist kein Int – GraphQL lehnt das selbst ab, das Backend wird nicht aufgerufen.
 test("GraphQL filmBewerten lehnt Kommazahlen ab, ohne das Backend zu fragen", async (t) => {
   const baseUrl = await createTestServer(t);
   const originalFetch = global.fetch;

@@ -178,7 +178,7 @@ Zugangsdaten gehören nicht ins Repository.
 npm test
 ```
 
-Die Tests in `test/bff.test.js`, `test/ratings.test.js` und `test/watchlist.test.js` ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
+Die Tests liegen in `test/`, eine Datei pro Bereich (`users`, `auth`, `movies`, `graphql`, `ratings`, `watchlist`); gemeinsame Hilfsfunktionen stehen in `test/helpers.js`. Sie ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
 
 ## Deployment auf Heroku
 
