@@ -34,6 +34,7 @@ Das BFF hat keinen Datenbankzugriff und ruft TMDB nicht selbst auf. Beides über
 | GET | `/bff/watchlist` | `GET /api/watchlist` | Watchlist des angemeldeten Nutzers, neueste zuerst: `{ movies: [...] }` |
 | POST | `/bff/watchlist` | `POST /api/watchlist` | Film vormerken (Body: `{ "movieId": 157336 }`), 201 / 404 unbekannter Film / 409 schon vorgemerkt |
 | DELETE | `/bff/watchlist/{movieId}` | `DELETE /api/watchlist/{movieId}` | Film entfernen, 200 / 404 nicht auf der Watchlist |
+| GET | `/bff/recommendations` | `GET /api/recommendations` | Filmvorschläge: `{ favoriteGenre, movies: [...] }`, bis zu 10 Filme; 400 zu wenige Bewertungen / 404 keine neuen Vorschläge |
 
 Statuscode und JSON-Antwort des Backends gibt das BFF unverändert weiter. Ist das Backend nicht erreichbar, antwortet es mit 503 `{ "message": "Backend is not reachable." }`. Die Statusroute antwortet in diesem Fall mit 502. Die Routen und Antworten sind in `CineRate_API-2.pdf` beschrieben.
 
@@ -137,6 +138,24 @@ mutation {
 
 Ist der Film schon vorgemerkt, kommt ein Fehler mit `extensions.status` 409. Ist er nicht auf der Watchlist, kommt 404.
 
+Filmvorschläge für den angemeldeten Nutzer:
+
+```graphql
+query {
+  vorschlaege {
+    favoriteGenre
+    movies {
+      movieId
+      title
+      description
+      posterUrl
+    }
+  }
+}
+```
+
+Vorschläge gibt es erst ab 3 bewerteten Filmen, davon mindestens einer mit 4 oder 5 Sternen; sonst kommt ein Fehler mit `extensions.status` 400. Gibt es keine neuen Vorschläge, kommt 404.
+
 #### Fehler
 
 Fehler stehen im Feld `errors` der Antwort, der HTTP-Status ist dabei 200. Kommt der Fehler vom Backend, steht dessen Statuscode in `extensions.status`:
@@ -178,7 +197,7 @@ Zugangsdaten gehören nicht ins Repository.
 npm test
 ```
 
-Die Tests liegen in `test/`, eine Datei pro Bereich (`users`, `auth`, `movies`, `graphql`, `ratings`, `watchlist`); gemeinsame Hilfsfunktionen stehen in `test/helpers.js`. Sie ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
+Die Tests liegen in `test/`, eine Datei pro Bereich (`users`, `auth`, `movies`, `graphql`, `ratings`, `watchlist`, `recommendations`); gemeinsame Hilfsfunktionen stehen in `test/helpers.js`. Sie ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
 
 ## Deployment auf Heroku
 
