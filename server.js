@@ -8,6 +8,7 @@ const moviesRoute = require("./routes/movies");
 const graphqlRoute = require("./routes/graphql");
 const ratingsRoute = require("./routes/ratings");
 const watchlistRoute = require("./routes/watchlist");
+const recommendationsRoute = require("./routes/recommendations");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -30,6 +31,7 @@ app.use("/bff", moviesRoute);
 app.use("/bff/graphql", graphqlRoute);
 app.use("/bff", ratingsRoute);
 app.use("/bff", watchlistRoute);
+app.use("/bff", recommendationsRoute);
 
 app.listen(PORT, () => {
   console.log(`CineRate-BFF läuft auf http://localhost:${PORT}`);
