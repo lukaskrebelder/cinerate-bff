@@ -1,3 +1,4 @@
+// KI-Log C4, C7, C15, C16, C19 (mit KI Claude-Unterstützung)
 // graphql/schema.js
 const { buildSchema } = require("graphql");
 

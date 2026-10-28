@@ -3,7 +3,7 @@ const router = express.Router();
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
-// KI-Log C
+// KI-Log C19 (mit Claude Opus 5.5-Unterstützung)
 // GET /bff/recommendations liefert bis zu 10 Filmvorschläge für den angemeldeten Nutzer (US-1).
 // Wer gemeint ist, erkennt das Backend am Token, deshalb gibt es keine ID noch Body.
 // 200 = { favoriteGenre, movies }, 400 = zu wenige Bewertungen, 404 = keine neuen Vorschläge.

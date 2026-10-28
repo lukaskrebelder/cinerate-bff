@@ -3,7 +3,7 @@ const { GraphQLError } = require("graphql");
 const BACKEND_URL =
   process.env.BACKEND_URL || "http://localhost:3000";
 
-// KI-Log C
+// KI-Log C14 (mit KI Claude-Unterstützung)
 // Baut einen GraphQL-Fehler mit dem HTTP-Statuscode.
 // So kann die MPA den Status lesen (errors[0].extensions.status).
 function backendError(status, message) {
@@ -12,6 +12,7 @@ function backendError(status, message) {
   });
 }
 
+// KI-Log C4 (mit KI Claude-Unterstützung)
 // Resolver für die GraphQL-Abfrage "filme".
 async function filme(args, context) {
   const backendUrl = new URL(
@@ -69,7 +70,7 @@ async function filme(args, context) {
   return responseData;
 }
 
-// KI-Log C
+// KI-Log C7 (mit KI Claude-Unterstützung)
 // Resolver für die GraphQL-Abfrage "film" (Detailansicht).
 async function film(args, context) {
   const backendUrl = `${BACKEND_URL.replace(/\/+$/, "")}/api/movies/${encodeURIComponent(
@@ -113,7 +114,7 @@ async function film(args, context) {
   return responseData;
 }
 
-// KI-Log C
+// KI-Log C15 (mit KI Claude-Unterstützung)
 // Gemeinsamer Backend-Aufruf für neue Resolver: Token weitergeben, Fehler mit Statuscode werfen.
 async function requestBackend(path, { method = "GET", body, authorization, fallbackMessage }) {
   const headers = {};
@@ -171,7 +172,7 @@ async function filmBewerten(args, context) {
   });
 }
 
-// KI-Log C
+// KI-Log C16 (mit KI Claude-Unterstützung)
 // Resolver für die Abfrage "watchlist": Filme des angemeldeten Nutzers, neueste zuerst.
 // Das Backend liefert { movies: [...] }, die MPA bekommt direkt die Liste.
 async function watchlist(args, context) {
@@ -201,7 +202,7 @@ async function vonWatchlistEntfernen(args, context) {
   });
 }
 
-// KI-Log C
+// KI-Log C19 (mit KI Claude-Unterstützung)
 // Resolver für die Abfrage "vorschlaege": Lieblingsgenre und bis zu 10 Filmvorschläge (US-1).
 async function vorschlaege(args, context) {
   return requestBackend("/api/recommendations", {

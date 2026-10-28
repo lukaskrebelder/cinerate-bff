@@ -6,6 +6,7 @@ const resolvers = require("../graphql/resolvers");
 
 const router = express.Router();
 
+// KI-Log C4 (mit KI Claude-Unterstützung)
 // GraphQL-Endpunkt: /bff/graphql
 router.all(
   "/",

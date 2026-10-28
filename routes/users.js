@@ -3,6 +3,7 @@ const router = express.Router();
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
+// KI-Log C1 (mit KI Claude-Unterstützung)
 // POST /bff/users leitet die Registrierung an POST /api/users weiter.
 router.post("/users", async (req, res) => {
   try {

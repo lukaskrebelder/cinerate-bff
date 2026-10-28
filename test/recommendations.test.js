@@ -1,3 +1,4 @@
+// KI-Log C18, C19: Erstellt mithilfe von KI (Claude)
 // Tests für Filmvorschläge (US-1): routes/recommendations.js und GraphQL vorschlaege
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -12,7 +13,6 @@ const vorschlagsAntwort = {
   ],
 };
 
-// KI-Log C14
 // Vorschläge abrufen: GET an /api/recommendations, Token dabei, Antwort kommt unverändert zurück.
 test("GET /bff/recommendations leitet Token weiter und liefert Genre und Filme", async (t) => {
   const baseUrl = await createTestServer(t);
