@@ -1,3 +1,4 @@
+// KI-Log C3, C5, C6, C7, C18: Erstellt mithilfe von KI (Claude)
 // Tests für Filmsuche und Filmdetail per REST (US-5): routes/movies.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -120,7 +121,6 @@ test("GET /bff/movies ohne Token gibt HTTP 401 weiter", async (t) => {
   assert.deepEqual(response.body, backendBody);
 });
 
-// KI-Log
 // Akzeptanzkriterium 5.11: Backend nicht erreichbar bei der Filmsuche (REST)
 // Backend ist weg: die Suche antwortet mit 503.
 test("GET /bff/movies ergibt HTTP 503, wenn das Backend nicht erreichbar ist", async (t) => {
@@ -143,7 +143,6 @@ test("GET /bff/movies ergibt HTTP 503, wenn das Backend nicht erreichbar ist", a
   });
 });
 
-// KI-Log: Tests für die Detailroute geprüft (US-5, Akzeptanzkriterien 5.5, 5.10, 5.11)
 // Die Film-ID aus der Adresse landet im Backend-Pfad, die Antwort kommt unverändert zurück.
 test("GET /bff/movies/:movieId leitet ID und Authorization-Header weiter", async (t) => {
   let forwardedUrl;

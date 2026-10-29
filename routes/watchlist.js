@@ -32,7 +32,7 @@ async function forward(res, url, options) {
   }
 }
 
-// KI-Log C
+// KI-Log C16 (mit Claude Opus 5.5-Unterstützung)
 // GET /bff/watchlist liefert die Watchlist des angemeldeten Nutzers (neueste zuerst).
 router.get("/watchlist", (req, res) => {
   return forward(res, watchlistUrl(), {

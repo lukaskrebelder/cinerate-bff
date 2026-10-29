@@ -3,6 +3,7 @@ const router = express.Router();
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
+// KI-Log C3 (mit KI Claude-Unterstützung)
 // GET /bff/movies leitet die Filmsuche an GET /api/movies weiter.
 router.get("/movies", async (req, res) => {
   try {
@@ -45,7 +46,7 @@ router.get("/movies", async (req, res) => {
   }
 });
 
-// KI-Log: Detailroute für US-5 (Akzeptanzkriterien 5.5, 5.6, 5.10)
+// KI-Log C7 (mit Claude Opus 5.5-Unterstützung)
 // GET /bff/movies/:movieId leitet die Detailansicht an GET /api/movies/{movieId} weiter.
 router.get("/movies/:movieId", async (req, res) => {
   try {

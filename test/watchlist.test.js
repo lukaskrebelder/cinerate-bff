@@ -1,3 +1,4 @@
+// KI-Log C16, C18: Erstellt mithilfe von KI (Claude)
 // Tests für Watchlist (US-3): routes/watchlist.js und GraphQL watchlist / filmVormerken / vonWatchlistEntfernen
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -5,7 +6,6 @@ const { createTestServer, mockBackend, mockResponse, sendGraphql } = require("./
 
 const AUTH = { Authorization: "Bearer testtoken" };
 
-// KI-Log C
 // Watchlist abrufen: der Token geht mit, die Filmliste kommt unverändert zurück.
 test("GET /bff/watchlist leitet Token weiter und liefert die Filme", async (t) => {
   const baseUrl = await createTestServer(t);
@@ -122,7 +122,6 @@ test("Watchlist-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist",
   assert.equal(deleteResponse.status, 503);
 });
 
-// KI-Log C
 // GraphQL-Tests (sendGraphql kommt aus helpers.js)
 // Watchlist per GraphQL: kommt direkt als Liste zurück (ohne movies-Hülle wie bei REST).
 test("GraphQL watchlist liefert die Liste der Filme", async (t) => {

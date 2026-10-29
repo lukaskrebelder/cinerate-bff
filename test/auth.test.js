@@ -1,3 +1,4 @@
+// KI-Log C2, C18 : Erstellt mithilfe von KI (Claude)
 // Tests für Anmelden und Abmelden (US-2): routes/auth.js
 const test = require("node:test");
 const assert = require("node:assert/strict");

@@ -1,4 +1,4 @@
-<!-- KI-Log -->
+<!-- KI-Log C6, C7, C15, C16, C18, C19: Erstellt mithilfe von KI (Claude) -->
 # cinerate-bff
 
 Backend-for-Frontend (BFF) von CineRate. Teil der Fallstudie Software Engineering, WS 2026/27.

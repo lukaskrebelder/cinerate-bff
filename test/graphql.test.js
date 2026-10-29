@@ -1,3 +1,4 @@
+// KI-Log C4, C5, C7, C18: Erstellt mithilfe von KI (Claude)
 // Tests für GraphQL-Filmsuche und -Filmdetail (US-5): graphql/schema.js, graphql/resolvers.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -151,7 +152,6 @@ test("GraphQL meldet einen Fehler, wenn das Backend nicht erreichbar ist", async
     assert.equal(response.body.errors[0].extensions.status, 503);
 });
 
-// KI-Log
 // Detailansicht per GraphQL: richtige ID ans Backend, alle Felder kommen zurück, null bleibt null.
 test("GraphQL film leitet ID und Token weiter und liefert die Detailfelder", async (t) => {
   let forwardedUrl;

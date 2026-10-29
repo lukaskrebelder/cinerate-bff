@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
+// KI-Log C1 (mit KI Claude-Unterstützung)
 router.get("/status", async (req, res) => {
   try {
     const backendResponse = await fetch(`${BACKEND_URL}/api/status`);

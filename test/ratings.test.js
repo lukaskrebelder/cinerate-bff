@@ -1,9 +1,9 @@
+// KI-Log C13, C15, C18: Erstellt mithilfe von KI (Claude)
 // Tests für Bewertungen (US-4): routes/ratings.js und GraphQL bewertungen / filmBewerten
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createTestServer, mockBackend, mockResponse, sendGraphql } = require("./helpers");
 
-// KI-Log C8
 // Neue Bewertung: nur die Sterne gehen weiter (extra-Feld nicht), 201 kommt durch.
 test("POST /bff/movies/:movieId/ratings leitet Sterne und Token weiter (201 neu)", async (t) => {
   const baseUrl = await createTestServer(t);
@@ -118,7 +118,6 @@ test("Bewertungs-Routen ergeben HTTP 503, wenn das Backend nicht erreichbar ist"
   assert.deepEqual(await postResponse.json(), { message: "Backend is not reachable." });
 });
 
-// KI-Log C
 // GraphQL-Tests (sendGraphql kommt aus helpers.js)
 // Bewertungen per GraphQL: richtige Route, GET, Token dabei, null-Werte bleiben null.
 test("GraphQL bewertungen leitet ID und Token weiter und liefert null-Werte", async (t) => {

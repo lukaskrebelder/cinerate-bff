@@ -1,3 +1,4 @@
+// KI-Log C18: Erstellt mithilfe von KI (Claude)
 // Gemeinsame Hilfsfunktionen für alle BFF-Tests.
 // Diese Datei enthält selbst keine Tests.
 const express = require("express");

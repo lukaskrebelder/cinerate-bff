@@ -1,3 +1,4 @@
+// KI-Log C2, C18: Erstellt mithilfe von KI (Claude)
 // Tests für Registrieren und Account löschen (US-2): routes/users.js
 const test = require("node:test");
 const assert = require("node:assert/strict");

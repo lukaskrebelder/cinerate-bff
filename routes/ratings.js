@@ -20,7 +20,7 @@ function authHeaders(req) {
   return headers;
 }
 
-// KI-Log C
+// KI-Log C13 (mit Claude Opus 5.5-Unterstützung)
 // POST /bff/movies/:movieId/ratings leitet eine Bewertung an das Backend weiter.
 // 201 = neue Bewertung, 200 = eigene Bewertung geändert (entscheidet das Backend).
 router.post("/movies/:movieId/ratings", async (req, res) => {
