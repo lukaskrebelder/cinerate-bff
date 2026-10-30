@@ -211,6 +211,51 @@ async function vorschlaege(args, context) {
   });
 }
 
+// KI-Log C20 (mit Claude Opus 5.5-Unterstützung)
+// Resolver für die Abfrage "kommentare": Kommentare eines Films, neueste zuerst, 20 pro Seite.
+async function kommentare(args, context) {
+  const query = args.page === undefined || args.page === null ? "" : `?page=${encodeURIComponent(args.page)}`;
+  return requestBackend(`/api/movies/${encodeURIComponent(args.movieId)}/comments${query}`, {
+    authorization: context.authorization,
+    fallbackMessage: "Loading the comments failed.",
+  });
+}
+
+// Resolver für die Mutation "filmKommentieren": neuen Kommentar schreiben.
+async function filmKommentieren(args, context) {
+  return requestBackend(`/api/movies/${encodeURIComponent(args.movieId)}/comments`, {
+    method: "POST",
+    body: { text: args.text },
+    authorization: context.authorization,
+    fallbackMessage: "Posting the comment failed.",
+  });
+}
+
+// Resolver für die Mutation "kommentarBearbeiten": eigenen Kommentar ändern.
+async function kommentarBearbeiten(args, context) {
+  return requestBackend(
+    `/api/movies/${encodeURIComponent(args.movieId)}/comments/${encodeURIComponent(args.commentId)}`,
+    {
+      method: "PUT",
+      body: { text: args.text },
+      authorization: context.authorization,
+      fallbackMessage: "Updating the comment failed.",
+    }
+  );
+}
+
+// Resolver für die Mutation "kommentarLoeschen": Kommentar löschen (Autor oder Moderator).
+async function kommentarLoeschen(args, context) {
+  return requestBackend(
+    `/api/movies/${encodeURIComponent(args.movieId)}/comments/${encodeURIComponent(args.commentId)}`,
+    {
+      method: "DELETE",
+      authorization: context.authorization,
+      fallbackMessage: "Deleting the comment failed.",
+    }
+  );
+}
+
 module.exports = {
   filme,
   film,
@@ -220,4 +265,8 @@ module.exports = {
   filmVormerken,
   vonWatchlistEntfernen,
   vorschlaege,
+  kommentare,
+  filmKommentieren,
+  kommentarBearbeiten,
+  kommentarLoeschen,
 };
