@@ -1,4 +1,4 @@
-// KI-Log C4, C7, C15, C16, C19 (mit KI Claude-Unterstützung)
+// KI-Log C4, C7, C15, C16, C19, C20 (mit KI Claude-Unterstützung)
 // graphql/schema.js
 const { buildSchema } = require("graphql");
 
@@ -55,6 +55,26 @@ const schema = buildSchema(`
     movies: [Recommendation!]!
   }
 
+    type Comment {
+    commentId: String!
+    userId: String!
+    firstName: String!
+    text: String!
+    createdAt: String!
+    updatedAt: String
+  }
+
+  type CommentPage {
+    page: Int!
+    totalPages: Int!
+    comments: [Comment!]!
+  }
+
+  type CommentResult {
+    message: String!
+    commentId: String!
+  }
+
   type Query {
     filme(
       query: String
@@ -67,11 +87,15 @@ const schema = buildSchema(`
     bewertungen(movieId: Int!): RatingSummary!
     watchlist: [Movie!]!
     vorschlaege: Recommendations!
+    kommentare(movieId: Int!, page: Int): CommentPage!
   } 
     type Mutation {
     filmBewerten(movieId: Int!, stars: Int!): RatingResult!
     filmVormerken(movieId: Int!): MessageResult!
     vonWatchlistEntfernen(movieId: Int!): MessageResult!
+    filmKommentieren(movieId: Int!, text: String!): CommentResult!
+    kommentarBearbeiten(movieId: Int!, commentId: String!, text: String!): MessageResult!
+    kommentarLoeschen(movieId: Int!, commentId: String!): MessageResult!
   }
   
 `);

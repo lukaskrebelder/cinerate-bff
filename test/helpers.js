@@ -12,6 +12,7 @@ const graphqlRoute = require("../routes/graphql");
 const ratingsRoute = require("../routes/ratings");
 const watchlistRoute = require("../routes/watchlist");
 const recommendationsRoute = require("../routes/recommendations");
+const commentsRoute = require("../routes/comments");
 
 // Startet ein Test-BFF mit allen Routen auf einem freien Port (wie server.js, nur ohne CORS und festen Port).
 // Nach dem Test wird der Server wieder geschlossen.
@@ -27,6 +28,7 @@ function createTestServer(t) {
   app.use("/bff", ratingsRoute);
   app.use("/bff", watchlistRoute);
   app.use("/bff", recommendationsRoute);
+  app.use("/bff", commentsRoute); 
 
   const server = app.listen(0, "127.0.0.1");
 
