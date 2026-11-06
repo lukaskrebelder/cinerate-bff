@@ -1,4 +1,5 @@
 const { GraphQLError } = require("graphql");
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL =
   process.env.BACKEND_URL || "http://localhost:3000";
@@ -43,7 +44,7 @@ async function filme(args, context) {
   let backendResponse;
 
   try {
-    backendResponse = await fetch(backendUrl, {
+    backendResponse = await backendFetch(backendUrl, {
       method: "GET",
       headers,
     });
@@ -87,7 +88,7 @@ async function film(args, context) {
   let backendResponse;
 
   try {
-    backendResponse = await fetch(backendUrl, {
+    backendResponse = await backendFetch(backendUrl, {
       method: "GET",
       headers,
     });
@@ -130,7 +131,7 @@ async function requestBackend(path, { method = "GET", body, authorization, fallb
   let backendResponse;
 
   try {
-    backendResponse = await fetch(`${BACKEND_URL.replace(/\/+$/, "")}${path}`, {
+    backendResponse = await backendFetch(`${BACKEND_URL.replace(/\/+$/, "")}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
@@ -7,7 +8,7 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 // POST /bff/auth leitet den Login an POST /api/auth weiter.
 router.post("/auth", async (req, res) => {
   try {
-    const backendResponse = await fetch(`${BACKEND_URL}/api/auth`, {
+    const backendResponse = await backendFetch(`${BACKEND_URL}/api/auth`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -37,7 +38,7 @@ router.delete("/auth", async (req, res) => {
       headers.Authorization = authorization;
     }
 
-    const backendResponse = await fetch(`${BACKEND_URL}/api/auth`, {
+    const backendResponse = await backendFetch(`${BACKEND_URL}/api/auth`, {
       method: "DELETE",
       headers: headers,
     });

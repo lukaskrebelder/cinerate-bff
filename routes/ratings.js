@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
@@ -25,7 +26,7 @@ function authHeaders(req) {
 // 201 = neue Bewertung, 200 = eigene Bewertung geändert (entscheidet das Backend).
 router.post("/movies/:movieId/ratings", async (req, res) => {
   try {
-    const backendResponse = await fetch(ratingsUrl(req.params.movieId), {
+    const backendResponse = await backendFetch(ratingsUrl(req.params.movieId), {
       method: "POST",
       headers: { ...authHeaders(req), "Content-Type": "application/json" },
       body: JSON.stringify({ stars: req.body?.stars }),
@@ -41,7 +42,7 @@ router.post("/movies/:movieId/ratings", async (req, res) => {
 // GET /bff/movies/:movieId/ratings liefert Durchschnitt, Anzahl und eigene Sterne.
 router.get("/movies/:movieId/ratings", async (req, res) => {
   try {
-    const backendResponse = await fetch(ratingsUrl(req.params.movieId), {
+    const backendResponse = await backendFetch(ratingsUrl(req.params.movieId), {
       method: "GET",
       headers: authHeaders(req),
     });

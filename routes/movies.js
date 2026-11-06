@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
@@ -30,7 +31,7 @@ router.get("/movies", async (req, res) => {
       headers.Authorization = authorization;
     }
 
-    const backendResponse = await fetch(backendUrl, {
+    const backendResponse = await backendFetch(backendUrl, {
       method: "GET",
       headers,
     });
@@ -62,7 +63,7 @@ router.get("/movies/:movieId", async (req, res) => {
       headers.Authorization = authorization;
     }
 
-    const backendResponse = await fetch(backendUrl, {
+    const backendResponse = await backendFetch(backendUrl, {
       method: "GET",
       headers,
     });

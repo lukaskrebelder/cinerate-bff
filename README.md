@@ -1,4 +1,4 @@
-<!-- KI-Log C6, C7, C15, C16, C18, C19, C20: Erstellt mithilfe von KI (Claude) -->
+<!-- KI-Log C6, C7, C15, C16, C18, C19, C20, C25: Erstellt mithilfe von KI (Claude) -->
 # cinerate-bff
 
 Backend-for-Frontend (BFF) von CineRate. Teil der Fallstudie Software Engineering, WS 2026/27.
@@ -8,6 +8,8 @@ Backend-for-Frontend (BFF) von CineRate. Teil der Fallstudie Software Engineerin
 Das BFF ist die einzige Schnittstelle für die beiden Touchpoints SPA ([cinerate-spa](../cinerate-spa)) und MPA ([cinerate-mpa](../cinerate-mpa)).
 
 Es nimmt Anfragen entgegen, leitet sie an das Kern-Backend ([cinerate-backend](../cinerate-backend)) weiter und gibt die Antworten zurück. Den Header `Authorization: Bearer <token>` reicht es unverändert durch.
+
+Das Backend nimmt nur Anfragen vom BFF an. Dafür schickt das BFF bei jedem Aufruf den Header `X-Internal-Key` mit dem Wert aus `INTERNAL_API_KEY` mit (gemeinsamer Helfer `lib/backend.js`). Ist die Variable leer, wird kein Header geschickt.
 
 Das BFF bietet die Daten auf zwei Wegen an:
 
@@ -239,6 +241,7 @@ Der Server läuft lokal auf http://localhost:4000.
 | `PORT` | Port des Servers (Heroku setzt ihn selbst) |
 | `BACKEND_URL` | Adresse des Kern-Backends |
 | `SPA_URL` | Adresse der SPA, für CORS. Lokal kann sie leer bleiben. |
+| `INTERNAL_API_KEY` | Interner Schlüssel für das Backend (Header `X-Internal-Key`). Lokal leer lassen, wenn das lokale Backend keinen Schlüssel erwartet. |
 
 Zugangsdaten gehören nicht ins Repository.
 
@@ -248,11 +251,11 @@ Zugangsdaten gehören nicht ins Repository.
 npm test
 ```
 
-Die Tests liegen in `test/`, eine Datei pro Bereich (`users`, `auth`, `movies`, `graphql`, `ratings`, `watchlist`, `recommendations`, `comments`); gemeinsame Hilfsfunktionen stehen in `test/helpers.js`. Sie ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
+Die Tests liegen in `test/`, eine Datei pro Bereich (`users`, `auth`, `movies`, `graphql`, `ratings`, `watchlist`, `recommendations`, `comments`, `backend` für den internen Schlüssel); gemeinsame Hilfsfunktionen stehen in `test/helpers.js`. Sie ersetzen das Backend durch eine Attrappe. Sie prüfen, dass Pfad, Suchparameter, Body und Token richtig weitergegeben werden, dass Fehler des Backends unverändert ankommen (bei GraphQL mit `extensions.status`) und dass GraphQL ungültige Abfragen ablehnt. Die Tests laufen auch in GitHub Actions (`.github/workflows/bff-tests.yml`).
 
 ## Deployment auf Heroku
 
-Die Heroku-App `cinerate-bff` braucht die Config Vars `BACKEND_URL` (URL der Backend-App) und `SPA_URL` (URL der SPA).
+Die Heroku-App `cinerate-bff` braucht die Config Vars `BACKEND_URL` (URL der Backend-App), `SPA_URL` (URL der SPA) und `INTERNAL_API_KEY` (derselbe Wert wie auf der Backend-App).
 
 ```
 heroku config:set BACKEND_URL=<URL der Backend-App> SPA_URL=<URL der SPA> -a cinerate-bff
