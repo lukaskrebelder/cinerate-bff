@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
@@ -16,7 +17,7 @@ router.get("/recommendations", async (req, res) => {
       headers.Authorization = authorization;
     }
 
-    const backendResponse = await fetch(`${BACKEND_URL.replace(/\/+$/, "")}/api/recommendations`, {
+    const backendResponse = await backendFetch(`${BACKEND_URL.replace(/\/+$/, "")}/api/recommendations`, {
       method: "GET",
       headers,
     });

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
@@ -18,7 +19,7 @@ router.post("/users", async (req, res) => {
     headers.Authorization = authorization;
   }
 
-  const backendResponse = await fetch(`${BACKEND_URL}/api/users`, {
+  const backendResponse = await backendFetch(`${BACKEND_URL}/api/users`, {
     method: "POST",
     headers: headers,
     body: JSON.stringify(req.body),
@@ -46,7 +47,7 @@ router.delete("/users/:userId", async (req, res) => {
       headers.Authorization = authorization;
     }
 
-    const backendResponse = await fetch(
+    const backendResponse = await backendFetch(
       `${BACKEND_URL}/api/users/${encodeURIComponent(req.params.userId)}`,
       {
         method: "DELETE",

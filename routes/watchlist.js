@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { backendFetch } = require("../lib/backend");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
@@ -24,7 +25,7 @@ function authHeaders(req) {
 // Schickt die Anfrage ans Backend und gibt Status und Antwort unverändert zurück.
 async function forward(res, url, options) {
   try {
-    const backendResponse = await fetch(url, options);
+    const backendResponse = await backendFetch(url, options);
     const responseData = await backendResponse.json();
     return res.status(backendResponse.status).json(responseData);
   } catch (error) {
