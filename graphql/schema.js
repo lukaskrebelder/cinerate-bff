@@ -1,4 +1,4 @@
-// KI-Log C4, C7, C15, C16, C19, C20 (mit KI Claude-Unterstützung)
+// KI-Log C4, C7, C15, C16, C19, C20, C26 (mit KI Claude-Unterstützung)
 // graphql/schema.js
 const { buildSchema } = require("graphql");
 
@@ -75,6 +75,17 @@ const schema = buildSchema(`
     commentId: String!
   }
 
+  type RegistrierungResult {
+    message: String!
+    userId: String!
+  }
+
+  type LoginResult {
+    token: String!
+    userId: String!
+    rolle: String
+  }
+
   type Query {
     filme(
       query: String
@@ -96,6 +107,10 @@ const schema = buildSchema(`
     filmKommentieren(movieId: Int!, text: String!): CommentResult!
     kommentarBearbeiten(movieId: Int!, commentId: String!, text: String!): MessageResult!
     kommentarLoeschen(movieId: Int!, commentId: String!): MessageResult!
+    registrieren(firstName: String!, lastName: String!, email: String!, password: String!): RegistrierungResult!
+    anmelden(email: String!, password: String!): LoginResult!
+    abmelden: MessageResult!
+    kontoLoeschen(userId: String!): MessageResult!
   }
   
 `);

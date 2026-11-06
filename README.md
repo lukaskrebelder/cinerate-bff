@@ -1,4 +1,4 @@
-<!-- KI-Log C6, C7, C15, C16, C18, C19, C20, C25: Erstellt mithilfe von KI (Claude) -->
+<!-- KI-Log C6, C7, C15, C16, C18, C19, C20, C25, C26: Erstellt mithilfe von KI (Claude) -->
 # cinerate-bff
 
 Backend-for-Frontend (BFF) von CineRate. Teil der Fallstudie Software Engineering, WS 2026/27.
@@ -208,6 +208,45 @@ mutation {
 ```
 
 `commentId` ist Text (z. B. `c_1042`). `updatedAt` ist `null`, solange der Kommentar nicht bearbeitet wurde. Bearbeiten darf nur der Autor, löschen der Autor oder ein Moderator; sonst kommt ein Fehler mit `extensions.status` 403.
+
+Registrieren, anmelden, abmelden und Konto löschen (Mutationen):
+
+```graphql
+mutation {
+  registrieren(firstName: "Lena", lastName: "Hartmann", email: "lena.hartmann@example.com", password: "Kino2026!") {
+    message
+    userId
+  }
+}
+```
+
+```graphql
+mutation {
+  anmelden(email: "lena.hartmann@example.com", password: "Kino2026!") {
+    token
+    userId
+    rolle
+  }
+}
+```
+
+```graphql
+mutation {
+  abmelden {
+    message
+  }
+}
+```
+
+```graphql
+mutation {
+  kontoLoeschen(userId: "u_67") {
+    message
+  }
+}
+```
+
+Die Anmeldung liefert wie bei REST ein Token. Es wird danach im Header `Authorization: Bearer <token>` mitgegeben, auch für `abmelden` und `kontoLoeschen`. `registrieren` und `anmelden` brauchen kein Token. Gelöscht werden darf nur das eigene Konto, sonst kommt ein Fehler mit `extensions.status` 403. Damit bietet GraphQL alle REST-Routen außer `GET /bff/status` an.
 
 #### Fehler
 

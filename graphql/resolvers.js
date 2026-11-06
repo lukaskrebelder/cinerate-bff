@@ -257,6 +257,48 @@ async function kommentarLoeschen(args, context) {
   );
 }
 
+// KI-Log C26 (mit Claude Opus 5.5-Unterstützung)
+// Resolver für die Mutation "registrieren": neues Konto anlegen (kein Token nötig).
+async function registrieren(args) {
+  return requestBackend("/api/users", {
+    method: "POST",
+    body: {
+      firstName: args.firstName,
+      lastName: args.lastName,
+      email: args.email,
+      password: args.password,
+    },
+    fallbackMessage: "Registration failed.",
+  });
+}
+
+// Resolver für die Mutation "anmelden": liefert Token, userId und Rolle (kein Token nötig).
+async function anmelden(args) {
+  return requestBackend("/api/auth", {
+    method: "POST",
+    body: { email: args.email, password: args.password },
+    fallbackMessage: "Login failed.",
+  });
+}
+
+// Resolver für die Mutation "abmelden": macht das mitgeschickte Token ungültig.
+async function abmelden(args, context) {
+  return requestBackend("/api/auth", {
+    method: "DELETE",
+    authorization: context.authorization,
+    fallbackMessage: "Logout failed.",
+  });
+}
+
+// Resolver für die Mutation "kontoLoeschen": löscht das eigene Konto (userId im Format "u_67").
+async function kontoLoeschen(args, context) {
+  return requestBackend(`/api/users/${encodeURIComponent(args.userId)}`, {
+    method: "DELETE",
+    authorization: context.authorization,
+    fallbackMessage: "Deleting the account failed.",
+  });
+}
+
 module.exports = {
   filme,
   film,
@@ -270,4 +312,8 @@ module.exports = {
   filmKommentieren,
   kommentarBearbeiten,
   kommentarLoeschen,
+  registrieren,
+  anmelden,
+  abmelden,
+  kontoLoeschen,
 };
