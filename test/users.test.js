@@ -216,3 +216,28 @@ test("GraphQL kontoLoeschen ohne userId wird abgelehnt, ohne das Backend zu frag
   assert.ok(body.errors.length > 0);
   assert.equal(called, false);
 });
+
+// REST registrieren: zusätzliche Felder im Body gehen nicht ans Backend, nur die vier vorgesehenen.
+test("POST /bff/users gibt nur die vorgesehenen Felder weiter", async (t) => {
+  const baseUrl = await createTestServer(t);
+  let forwardedOptions;
+
+  mockBackend(t, async (_url, options) => {
+    forwardedOptions = options;
+    return mockResponse(201, { message: "Account has been created.", userId: "u_67" });
+  });
+
+  const response = await sendRequest(baseUrl, "/bff/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: { firstName: "Lena", lastName: "Hartmann", email: "lena@example.com", password: "Kino2026!", rolle: "Moderator" },
+  });
+
+  assert.equal(response.status, 201);
+  assert.deepEqual(JSON.parse(forwardedOptions.body), {
+    firstName: "Lena",
+    lastName: "Hartmann",
+    email: "lena@example.com",
+    password: "Kino2026!",
+  });
+});

@@ -190,3 +190,23 @@ test("GraphQL abmelden meldet 401 mit extensions.status", async (t) => {
   assert.equal(body.errors[0].message, "Invalid token.");
   assert.equal(body.errors[0].extensions.status, 401);
 });
+
+// REST anmelden: zusätzliche Felder im Body gehen nicht ans Backend, nur E-Mail und Passwort.
+test("POST /bff/auth gibt nur E-Mail und Passwort weiter", async (t) => {
+  const baseUrl = await createTestServer(t);
+  let forwardedOptions;
+
+  mockBackend(t, async (_url, options) => {
+    forwardedOptions = options;
+    return mockResponse(200, { token: "abc123", userId: "u_67", rolle: "Nutzer" });
+  });
+
+  const response = await sendRequest(baseUrl, "/bff/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: { email: "lena@example.com", password: "Kino2026!", extra: "nicht weitergeben" },
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(JSON.parse(forwardedOptions.body), { email: "lena@example.com", password: "Kino2026!" });
+});

@@ -246,7 +246,24 @@ mutation {
 }
 ```
 
-Die Anmeldung liefert wie bei REST ein Token. Es wird danach im Header `Authorization: Bearer <token>` mitgegeben, auch für `abmelden` und `kontoLoeschen`. `registrieren` und `anmelden` brauchen kein Token. Gelöscht werden darf nur das eigene Konto, sonst kommt ein Fehler mit `extensions.status` 403. Damit bietet GraphQL alle REST-Routen außer `GET /bff/status` an.
+Die Anmeldung liefert wie bei REST ein Token. Es wird danach im Header `Authorization: Bearer <token>` mitgegeben, auch für `abmelden` und `kontoLoeschen`. `registrieren` und `anmelden` brauchen kein Token. Gelöscht werden darf nur das eigene Konto, sonst kommt ein Fehler mit `extensions.status` 403.
+
+Status von BFF und Backend (wie `GET /bff/status`, ohne Token):
+
+```graphql
+query {
+  status {
+    status
+    nachricht
+    backend {
+      status
+      filmeInDb
+    }
+  }
+}
+```
+
+Damit bietet GraphQL alle 17 REST-Routen an.
 
 #### Fehler
 

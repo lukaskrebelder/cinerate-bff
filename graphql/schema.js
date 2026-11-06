@@ -75,6 +75,18 @@ const schema = buildSchema(`
     commentId: String!
   }
 
+  type BackendStatus {
+    status: String!
+    nachricht: String
+    filmeInDb: Int
+  }
+
+  type Status {
+    status: String!
+    nachricht: String!
+    backend: BackendStatus!
+  }
+
   type RegistrierungResult {
     message: String!
     userId: String!
@@ -99,6 +111,7 @@ const schema = buildSchema(`
     watchlist: [Movie!]!
     vorschlaege: Recommendations!
     kommentare(movieId: Int!, page: Int): CommentPage!
+    status: Status!
   } 
     type Mutation {
     filmBewerten(movieId: Int!, stars: Int!): RatingResult!

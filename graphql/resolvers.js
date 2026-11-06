@@ -258,6 +258,14 @@ async function kommentarLoeschen(args, context) {
 }
 
 // KI-Log C26 (mit Claude Opus 5.5-Unterstützung)
+// Resolver für die Abfrage "status": prüft wie GET /bff/status, ob BFF und Backend laufen (kein Token nötig).
+async function status() {
+  const backend = await requestBackend("/api/status", {
+    fallbackMessage: "Loading the status failed.",
+  });
+  return { status: "ok", nachricht: "CineRate-BFF läuft", backend };
+}
+
 // Resolver für die Mutation "registrieren": neues Konto anlegen (kein Token nötig).
 async function registrieren(args) {
   return requestBackend("/api/users", {
@@ -316,4 +324,5 @@ module.exports = {
   anmelden,
   abmelden,
   kontoLoeschen,
+  status,
 };

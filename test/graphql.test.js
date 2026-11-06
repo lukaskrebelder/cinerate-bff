@@ -1,8 +1,8 @@
-// KI-Log C4, C5, C7, C18: Erstellt mithilfe von KI (Claude)
-// Tests für GraphQL-Filmsuche und -Filmdetail (US-5): graphql/schema.js, graphql/resolvers.js
+// KI-Log C4, C5, C7, C18, C26: Erstellt mithilfe von KI (Claude)
+// Tests für GraphQL-Filmsuche, -Filmdetail (US-5) und -Status: graphql/schema.js, graphql/resolvers.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { createTestServer, mockBackend, mockResponse, sendRequest } = require("./helpers");
+const { createTestServer, mockBackend, mockResponse, sendRequest, sendGraphql } = require("./helpers");
 
 // GraphQL test Filmsuche und Authorization-Header
 // Die GraphQL-Suche soll dieselben Parameter wie REST ans Backend schicken, inklusive Token.
@@ -258,4 +258,42 @@ test("GraphQL film lehnt eine ungültige ID ab, ohne das Backend zu fragen", asy
 
   assert.ok(Array.isArray(response.body.errors));
   assert.equal(backendCalled, false);
+});
+
+// GraphQL status: fragt /api/status ab und liefert BFF- und Backend-Status.
+test("GraphQL status liefert den Status von BFF und Backend", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+  let backendCall;
+
+  mockBackend(t, async (url, options) => {
+    backendCall = { url: String(url), options };
+    return mockResponse(200, { status: "ok", nachricht: "CineRate-Backend läuft", filmeInDb: 1240 });
+  });
+
+  const body = await sendGraphql(originalFetch, baseUrl, "{ status { status nachricht backend { status nachricht filmeInDb } } }");
+
+  assert.equal(body.errors, undefined);
+  assert.deepEqual(body.data.status, {
+    status: "ok",
+    nachricht: "CineRate-BFF läuft",
+    backend: { status: "ok", nachricht: "CineRate-Backend läuft", filmeInDb: 1240 },
+  });
+  assert.match(backendCall.url, /\/api\/status$/);
+  assert.equal(backendCall.options.headers.Authorization, undefined);
+});
+
+// GraphQL status: ist das Backend nicht erreichbar, kommt ein Fehler mit Status 503.
+test("GraphQL status meldet 503, wenn das Backend nicht erreichbar ist", async (t) => {
+  const baseUrl = await createTestServer(t);
+  const originalFetch = global.fetch;
+
+  mockBackend(t, async () => {
+    throw new Error("connect ECONNREFUSED");
+  });
+
+  const body = await sendGraphql(originalFetch, baseUrl, "{ status { status } }");
+
+  assert.equal(body.errors[0].message, "Backend is not reachable.");
+  assert.equal(body.errors[0].extensions.status, 503);
 });
