@@ -13,7 +13,9 @@ router.post("/auth", async (req, res) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(req.body),
+      // KI-Log C26 (mit Claude Opus 5.5-Unterstützung)
+      // Nur E-Mail und Passwort gehen weiter (ADR-02).
+      body: JSON.stringify({ email: req.body?.email, password: req.body?.password }),
     });
 
     const responseData = await backendResponse.json();

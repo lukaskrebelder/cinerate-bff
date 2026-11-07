@@ -22,7 +22,14 @@ router.post("/users", async (req, res) => {
   const backendResponse = await backendFetch(`${BACKEND_URL}/api/users`, {
     method: "POST",
     headers: headers,
-    body: JSON.stringify(req.body),
+    // KI-Log C26 (mit Claude Opus 5.5-Unterstützung)
+    // Nur die vorgesehenen Felder gehen weiter (ADR-02).
+    body: JSON.stringify({
+      firstName: req.body?.firstName,
+      lastName: req.body?.lastName,
+      email: req.body?.email,
+      password: req.body?.password,
+    }),
   });
 
   const responseData = await backendResponse.json();
